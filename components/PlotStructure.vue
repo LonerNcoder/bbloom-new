@@ -63,7 +63,7 @@
       <!-- Add Root Plot Modal -->
       <div
         v-if="showAddRootPlotModal"
-        class="fixed inset-0 z-[800] flex items-center justify-center bg-black bg-opacity-50"
+        class="fixed inset-0 z-[800] flex items-center justify-center backdrop-blur-sm bg-opacity-50"
         @click.self="showAddRootPlotModal = false"
       >
         <div class="bg-white p-4 rounded-md shadow-lg relative max-w-lg w-full">
@@ -71,7 +71,7 @@
             @click="showAddRootPlotModal = false"
             class="absolute top-0 right-0 m-2 text-gray-600 text-xl leading-none"
           >
-            &times;
+              <X />
           </button>
           <h3 class="text-xl font-semibold mb-2">Add Root Plot</h3>
           <div class="mb-2">
@@ -131,7 +131,7 @@
       <!-- Plot Checker Modal (for selecting plots) -->
       <div
         v-if="showPlotCheckerModal"
-        class="fixed inset-0 z-[800] flex items-center justify-center bg-black bg-opacity-50"
+        class="fixed inset-0 z-[800] flex items-center justify-center backdrop-blur-sm bg-opacity-50"
         @click.self="closePlotChecker"
       >
         <div class="bg-white p-4 rounded-md shadow-lg relative max-w-xl w-full">
@@ -139,7 +139,7 @@
             @click="closePlotChecker"
             class="absolute top-0 right-0 m-2 text-gray-600 text-xl leading-none"
           >
-            &times;
+            <X />
           </button>
           <h3 class="text-xl font-semibold mb-2">Plot Checker</h3>
           <!-- Selected Plots Badges -->
@@ -211,25 +211,32 @@
         </div>
       </div>
   
-      <!-- Markdown Report Modal -->
       <div
-        v-if="showReportModal"
-        class="fixed inset-0 z-[1000] rounded-md flex items-center justify-center bg-black bg-opacity-50"
-        @click.self="closeReportModal"
+  v-if="showReportModal"
+  class="fixed inset-0 z-[1000] flex items-center justify-center backdrop-blur-sm bg-opacity-50"
+  @click.self="closeReportModal"
+>
+  <!-- Modal Container -->
+  <div class="bg-white top-0 h-full fixed rounded-md shadow-lg w-full">
+    <!-- Header Section -->
+    <div class="flex justify-between items-center p-4 border-b">
+      <!-- Title -->
+      <h3 class="text-lg font-semibold">Plot Checker Report</h3>
+      <!-- Close Button -->
+      <button
+        @click="closeReportModal"
+        class="text-gray-600 hover:text-gray-800 text-2xl font-bold"
       >
-        <div class="flex flex-row">
-          <h3>Plot Checker Report </h3>
-          <button
-            @click="closeReportModal"
-            class="absolute top-2 right-2 text-gray-600 text-2xl font-bold"
-          >
-            &times;
-          </button>
-        </div>
-        <div class="bg-white w-full h-full overflow-auto relative p-4">
-          <div v-html="reportMarkdown" class="prose max-w-3xl mx-auto"></div>
-        </div>
-      </div>
+        <X />
+      </button>
+    </div>
+
+    <!-- Main Report Content -->
+    <div class="p-4">
+      <div v-html="reportMarkdown" class="max-w-none max-h-[100vh] overflow-y-auto"></div>
+    </div>
+  </div>
+</div>
   
       <!-- Past Plot Checker Reports List -->
       <div v-if="reports.length" class="mt-8" style="max-height: 500px; overflow: auto;">
@@ -264,7 +271,7 @@
   import { v4 as uuidv4 } from 'uuid'
   import { marked } from 'marked'
   // Import icons from lucide-vue-next, including the new Plus icon.
-  import { ShieldAlert, GitBranchPlus, ShieldCheck, Download, Import, Plus } from 'lucide-vue-next'
+  import { ShieldAlert, GitBranchPlus, ShieldCheck, Download, Import, Plus, X } from 'lucide-vue-next'
   
   // Props
   const props = defineProps({
@@ -281,6 +288,7 @@
   const newChapterRangeMax = ref(10)
   const showAddRootPlotModal = ref(false)
   const plots = reactive([])
+  const API = useRuntimeConfig().public.baseSafeAPI
   
   function submitAddRootPlot() {
     if (!newPlotTitle.value) return
@@ -521,7 +529,7 @@
   
     let apiReport = ""
     try {
-      apiReport = await $fetch("${API}plot/plotholes", {
+      apiReport = await $fetch(`${API}plot/plotholes`, {
         method: "POST",
         body: output
       })

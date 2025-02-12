@@ -1163,7 +1163,7 @@ function updateEditorUITheme(dark) {
     document.removeEventListener('click', handleClickOutside)
   })
 </script>
-<style>
+<style scoped>
 .sidebar-transition {
   transition: width 0.3s ease;
 }

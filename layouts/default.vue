@@ -1,5 +1,4 @@
 <template>
-    <v-app>
   <div class="app-wrapper">
       <header 
           class="w-full bg-[--header-bg-color] shadow-md transition-all duration-300 transform"
@@ -243,7 +242,6 @@
           </div>
       </footer>
   </div>
-</v-app>
 </template>
 
 <script setup lang="js">

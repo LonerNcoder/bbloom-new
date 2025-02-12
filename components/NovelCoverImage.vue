@@ -154,6 +154,7 @@ import {
 import VueCropper from 'vue-cropperjs'
 import 'cropperjs/dist/cropper.css'
   const {$store} = useNuxtApp();
+  const API = useRuntimeConfig().public.baseSafeAPI
 //   import GenerateImage from './GenerateImage.vue'
   
   const props = defineProps({
