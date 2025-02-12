@@ -1,0 +1,325 @@
+<template>
+    <LoadingAnimation v-if="loading"></LoadingAnimation>
+      <!-- <client-only fallback-tag="div" fallback="Loading editor..."> -->
+      <div class="min-h-screen flex flex-col bg-gray-50">
+        <!-- Top Navigation Bar -->
+        <nav class="bg-white border-b px-4 py-2 flex items-center justify-between">
+          <div class="flex items-center space-x-2">
+            <h1 class="text-xl font-bold">{{chapterTitle || "no title"}}</h1>
+  
+            <NuxtLink :to="`/edit/${novel_id}`" class="inline-flex items-center gap-2 px-3 py-1.5 text-sm hover:bg-gray-100 rounded-md">
+              <ArrowBigLeft name="lucide:save" class="w-4 h-4" />
+              Back
+            </NuxtLink>
+               <!-- Save Button with Dropdown -->
+               <div class="relative inline-block">
+                <button 
+                  @click="toggleSaveMenu"
+                  class="inline-flex items-center gap-2 px-3 py-1.5 text-sm hover:bg-gray-100 rounded-md"
+                  ref="saveButtonRef"
+                >
+                  <Save name="lucide:save" class="w-4 h-4" />
+                  Save
+                </button>
+                
+                <!-- Save Options Dropdown -->
+                <transition
+                  enter-active-class="transition ease-out duration-100"
+                  enter-from-class="transform opacity-0 scale-95"
+                  enter-to-class="transform opacity-100 scale-100"
+                  leave-active-class="transition ease-in duration-75"
+                  leave-from-class="transform opacity-100 scale-100"
+                  leave-to-class="transform opacity-0 scale-95"
+                >
+                  <div v-show="showSaveMenu" 
+                      class="absolute z-50 mt-1 bg-white rounded-md shadow-lg border border-gray-200 py-1 w-40"
+                      ref="dropdownRef">
+                    <button 
+                      @click="saveAsDraft"
+                      class="w-full text-left px-4 py-2 text-sm hover:bg-gray-100"
+                    >
+                      Save as Draft
+                    </button>
+                    <button 
+                      @click="saveAsUnpublished"
+                      class="w-full text-left px-4 py-2 text-sm hover:bg-gray-100"
+                    >
+                      Save as Unpublished
+                    </button>
+                  </div>
+                </transition>
+              </div>
+  
+            <!-- Publish Now Button -->
+            <button 
+              @click="publishNow"
+              class="inline-flex items-center gap-2 px-3 py-1.5 text-sm bg-green-600 text-white hover:bg-green-700 rounded-md"
+            >
+              <Upload class="w-4 h-4" />
+              {{ mode === "pub" ? "Update Chapter": "Publish Now" }}
+            </button>
+            <button class="inline-flex items-center gap-2 px-3 py-1.5 text-sm hover:bg-gray-100 rounded-md">
+              <Settings class="w-4 h-4"  ></Settings>
+              Settings
+            </button>
+          </div>
+          <div class="flex items-center space-x-2">
+            <button class="px-3 py-1.5 text-sm border border-gray-300 hover:bg-gray-100 rounded-md">Share</button>
+            <button class="px-3 py-1.5 text-sm bg-blue-600 text-white hover:bg-blue-700 rounded-md">{{username}}</button>
+          </div>
+        </nav>
+    
+        <div class="flex-1 flex">
+          <!-- Main Writing Area -->
+          <div :class="`flex-1 transition-all duration-300 ${showUtilityPanel ? 'w-2/3' : 'w-full'}`">
+            <div class="h-full flex flex-col">
+              <!-- Chapter Navigation -->
+              <!-- Writing Space max-w-3xl -->
+              <div class="flex-1 p-8 bg-white mx-auto w-full overflow-y-auto" >
+                <div class="max-w-none">
+                  <input
+                    v-model="chapterTitle"
+                    type="text"
+                    placeholder="Chapter Title"
+                    class="w-full text-3xl font-bold mb-4 p-2 border-none focus:outline-none focus:ring-2 focus:ring-blue-200 rounded-md"
+                  />
+  
+                  <!-- <client-only > -->
+                       <!-- <ExtendEditor nuxt-client></ExtendEditor> -->
+                  <!-- </client-only> -->
+  
+                  <!-- <div>
+                    <div style="border-bottom: 1px solid #e8e8e8;">
+                      <div id="editor-toolbar"></div>
+                    </div>
+                    <div id="content">
+                      <div id="editor-container">
+                        <!-- <div id="title-container">
+                          <input v-model="pageTitle" placeholder="Page title..." />
+                        </div> -->
+                        <!-- <div id="editor-text-area"></div> -->
+                      <!-- </div> -->
+                    <!-- </div> -->
+                  <!-- </div> --> 
+                  <Editor api-key="no-api-key" :init="init"></Editor>
+                  <!-- <div id="mask"></div> -->
+   
+                  <button @click="getEditorHtml" class="responsive-button">Save</button>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+    </div>
+
+ 
+      <!-- </client-only> -->
+</template>
+
+<script setup>
+
+// TinyMCE
+import 'tinymce/tinymce'
+import 'tinymce/icons/default/icons'
+import 'tinymce/themes/silver/theme'
+import 'tinymce/models/dom/model'
+import 'tinymce/skins/ui/oxide/skin.css'
+import 'tinymce/skins/content/default/content.css'
+// const contentUiCss = import('tinymce/skins/ui/oxide/content.css');
+
+// TinyMCE plugins
+// https://www.tiny.cloud/docs/tinymce/6/plugins/
+import 'tinymce/plugins/lists/plugin'
+import 'tinymce/plugins/media/plugin'
+import 'tinymce/plugins/emoticons/plugin'
+import 'tinymce/plugins/link/plugin'
+import 'tinymce/plugins/image/plugin'
+import 'tinymce/plugins/table/plugin'
+import 'tinymce/plugins/code/plugin'
+import 'tinymce/plugins/help/plugin'
+import 'tinymce/plugins/wordcount/plugin'
+
+import Editor from '@tinymce/tinymce-vue'
+
+import {
+    Settings, 
+    Save, 
+    ArrowBigLeft, 
+    GitBranchIcon, 
+    TriangleAlert, 
+    MenuSquare, 
+    Upload, 
+    Search, 
+    Check,Users 
+} from 'lucide-vue-next'
+
+const route = useRoute()
+const getEditorHtml = () =>{}
+const showUtilityPanel = ref(false)
+const chapterTitle = ref("title")
+const publishNow = () =>{}
+const toggleSaveMenu = () =>{}
+const novel_id = route.params.novel_id
+const showSaveMenu = ref(false)
+
+const plugins= 'quickbars emoticons table media image wordcount';
+const toolbar = 'bold italic underline strikethrough | fontsizeselect | forecolor backcolor | alignleft aligncenter alignright alignjustify|bullist numlist |outdent indent blockquote | undo redo | axupimgs | removeformat | table | wordcount'
+
+const init = reactive({
+  height: 500,
+  content_css: "document",
+  menubar: false,
+  content_css: false,
+  skin: false,
+  plugins: plugins,
+  toolbar: toolbar,
+  quickbars_insert_toolbar: true,
+  branding: false,
+//   content_style: contentUiCss.toString(),
+});
+
+</script>
+
+
+
+<style scoped>
+  .prose {
+    max-width: none;
+  }
+
+  :root{
+--umo-primary-color: #3480f9;
+--umo-color-white: #fff;
+--umo-color-black: #000;
+--umo-warning-color: #f6913e;
+--umo-error-color: #ef3f35;
+--umo-container-background: #f4f5f7;
+--umo-button-hover-background: #f1f3f5;
+--umo-text-selection-background: #94cfff;
+--umo-font-family: helvetica neue, helvetica, pingfang sc, hiragino sans gb, microsoft yahei, simsun, sans-serif;
+--umo-font-size: 14px;
+--umo-font-size-small: 12px;
+--umo-text-color: rgb(51, 54, 57);
+--umo-text-color-light: rgba(0, 0, 0, 0.5);
+--umo-text-color-disabled: #a7abac;
+--umo-border-color: rgba(0, 0, 0, 0.08);
+--umo-border-color-dark: #ddd;
+--umo-border-color-light: rgba(0, 0, 0, .05);
+--umo-shadow: 0 3px 14px 2px rgba(0, 0, 0, 0.03), 0 8px 10px 1px rgba(0, 0, 0, 4%), 0 5px 5px -3px rgba(0, 0, 0, 8%);
+--umo-radius: 3px;
+--umo-radius-medium: 5px;
+--umo-popup-content-padding: 12px;
+--umo-popup-max-height: max(60vh, 180px);
+--umo-tooltip-content-padding: 6px 10px;
+--umo-mask-color: transparent;
+--umo-content-placeholder-color: #999;
+--umo-content-text-color: #333;
+--umo-content-node-border: #e7e7e7;
+--umo-content-node-radius: var(--umo-radius);
+--umo-content-node-bottom: 0.75em;
+--umo-content-node-selected-background: #f5f8fc;
+--umo-content-table-border-color: #333;
+--umo-content-table-thead-background: #f1f3f5;
+--umo-content-table-selected-background: rgba(200, 200, 255, 0.4);
+--umo-content-line-number-color: #e7e8ea;
+--umo-content-search-result-background: #fefc7ef2;
+--umo-content-search-result-current-background: #0dff00c3;
+--umo-content-invisible-break-color: rgb(78, 139, 252);
+--umo-content-code-color: var(--umo-primary-color);
+--umo-content-code-background: #f1f3f5;
+--umo-content-code-family: Consolas, Monaco, Andale Mono, Ubuntu Mono,monospace;
+--umo-scrollbar-size: 4px;
+--umo-scrollbar-thumb-color: rgba(0, 0, 0, 0.2);
+--umo-scrollbar-thumb-hover-color: rgba(0, 0, 0, 0.35);
+}
+
+html[theme-mode='dark']{
+--umo-color-white: #17171a;
+--umo-color-black: #fff;
+--umo-warning-color: rgb(207, 110, 45);
+--umo-error-color: rgb(198, 71, 81);
+--umo-container-background: #2a2b2d;
+--umo-button-hover-background: #2c2c2c;
+--umo-text-color: #ddd;
+--umo-text-color-light: #bbb;
+--umo-text-color-disabled: #999;
+--umo-border-color: rgba(255, 255, 255, 0.15);
+--umo-border-color-dark: rgba(255, 255, 255, 0.2);
+--umo-border-color-light: rgba(255, 255, 255, 0.08);
+--umo-content-text-color: #000;
+--umo-scrollbar-thumb-color: rgba(255, 255, 255, 0.3);
+--umo-scrollbar-thumb-hover-color: rgba(255, 255, 255, 0.45);
+}
+
+html,
+body {
+  background-color: #fff;
+  height: 100%;
+  overflow: hidden;
+  color: #333;
+}
+
+#top-container {
+  border-bottom: 1px solid #e8e8e8;
+  padding-left: 30px;
+}
+
+#editor-toolbar {
+  width: 1350px;
+  background-color: #FCFCFC;
+  margin: 0 auto;
+}
+
+#content {
+  height: calc(100% - 40px);
+  background-color: rgb(245, 245, 245);
+  overflow-y: auto;
+  position: relative;
+}
+
+#editor-container {
+  width: 850px;
+  margin: 30px auto 150px auto;
+  background-color: #fff;
+  padding: 20px 50px 50px 50px;
+  border: 1px solid #e8e8e8;
+  box-shadow: 0 2px 10px rgb(0 0 0 / 12%);
+}
+.tox-editor-container{
+  width: 850px;
+  margin: 30px auto 150px auto;
+  background-color: #fff; 
+  padding: 20px 50px 50px 50px;
+  border: 1px solid #e8e8e8;
+  box-shadow: 0 2px 10px rgb(0 0 0 / 12%);
+}
+
+#title-container {
+  padding: 20px 0;
+  border-bottom: 1px solid #e8e8e8;
+}
+
+#title-container input {
+  font-size: 30px;
+  border: 0;
+  outline: none;
+  width: 100%;
+  line-height: 1;
+}
+
+#editor-text-area {
+  min-height: 900px;
+  margin-top: 20px;
+}
+
+#mask {
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      z-index: 999;
+      background-color: #00000073;
+      display: none;
+    }
+</style>

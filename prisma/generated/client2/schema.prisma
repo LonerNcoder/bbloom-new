@@ -1,0 +1,61 @@
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL2")
+}
+
+generator client {
+  provider = "prisma-client-js"
+  output   = "./generated/client2"
+}
+
+model ReviewInstance {
+  id         String   @id @default(cuid())
+  instanceId String   @unique
+  reviews    Review[]
+  createdAt  DateTime @default(now())
+}
+
+model Review {
+  id            String         @id @default(cuid())
+  instance      ReviewInstance @relation(fields: [instanceId], references: [id], onDelete: Cascade)
+  instanceId    String
+  rating        Int
+  rootComment   Comment        @relation("ReviewToRootComment", fields: [rootCommentId], references: [id], onDelete: Cascade)
+  rootCommentId String         @unique
+  createdAt     DateTime       @default(now())
+}
+
+model Comment {
+  id          String    @id @default(cuid())
+  review      Review?   @relation("ReviewToRootComment")
+  userId      String
+  username    String
+  content     String
+  attachments String?
+  parent      Comment?  @relation("CommentReplies", fields: [parentId], references: [id], onDelete: Cascade)
+  parentId    String?
+  children    Comment[] @relation("CommentReplies")
+  votes       Vote[]
+  upvotes     Int       @default(0) // Tracks the number of upvotes
+  downvotes   Int       @default(0) // Tracks the number of downvotes
+  createdAt   DateTime  @default(now())
+
+  @@index([userId])
+  @@index([username])
+}
+
+model Vote {
+  id        String   @id @default(cuid())
+  userId    String
+  comment   Comment  @relation(fields: [commentId], references: [id], onDelete: Cascade)
+  commentId String
+  type      VoteType
+  createdAt DateTime @default(now())
+
+  @@unique([userId, commentId])
+}
+
+enum VoteType {
+  UPVOTE
+  DOWNVOTE
+}

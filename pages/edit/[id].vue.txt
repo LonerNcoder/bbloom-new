@@ -1,0 +1,1025 @@
+<template>
+    <div class="min-h-screen bg-gray-50 pb-8">
+      <!-- Show a loading spinner while fetching -->
+      <!-- <div v-if="novel" class="flex justify-center items-center h-screen"> -->
+        <LoadingAnimation v-if="!novel"></LoadingAnimation>
+      <!-- </div> -->
+      <!-- Main Content -->
+      <div v-else>
+        <!-- Hero Section with Novel Info -->
+        <div class="bg-white shadow-sm">
+          <div class="max-w-7xl mx-auto px-4 py-6">
+            <div class="flex flex-wrap lg:flex-nowrap gap-6">
+              <!-- Cover Image -->
+              <div class="w-48 h-64 flex-shrink-0">
+                <img 
+                  :src="novel.coverImage" 
+                  :alt="novel.title"
+                  class="w-full h-full object-cover rounded-lg shadow-md"
+                />
+              </div>
+    
+              <!-- Novel Info -->
+              <div class="flex-1">
+                <h1 class="text-2xl sm:text-3xl md:text-4xl font-bold mb-2">{{ novel.title }}</h1>
+                <h2 class="text-lg sm:text-xl text-gray-600 mb-4">{{ novel.author }}</h2>
+                <!-- <h1 class="text-2xl font-bold mb-2">{{ novel.title }}</h1> -->
+                <h2 v-if="novel.originalTitle" class="text-lg text-gray-600 mb-4">{{ novel.originalTitle }}</h2>
+                <!-- <h2 class="text-lg text-gray-600 mb-4">{{ novel.author }}</h2> -->
+                
+                <div class="flex items-center gap-6 mb-4">
+                  <div class="flex items-center gap-2">
+                    <BookOpen name="lucide:book-open" class="w-5 h-5 text-gray-600" />
+                    <span>{{ novel.chapters }} Chapters</span>
+                  </div>
+                  <div class="flex items-center gap-2">
+                    <Eye name="lucide:eye" class="w-5 h-5 text-gray-600" />
+                    <span>{{ novel.views || 100 }} Views</span>
+                  </div>
+                  <div class="flex items-center gap-2">
+                    <Users name="lucide:users" class="w-5 h-5 text-gray-600" />
+                    <span>{{ novel.readers || 0 }} Readers</span>
+                  </div>
+                </div>
+    
+                <div class="flex items-center gap-2 mb-4">
+                    <div class="flex">
+                    <div v-for="i in 5" :key="'star-' + i">
+                      <Star 
+                        v-if="i <= novel.rating" 
+                        class="w-5 h-5 text-yellow-400" 
+                      />
+                      <StarOff 
+                        v-else 
+                        class="w-5 h-5 text-gray-300" 
+                      />
+                    </div>
+                  </div>
+  
+  
+                  <span class="text-lg font-semibold">{{ novel.reviews }}</span>
+                  <span class="text-gray-500">({{ novel.reviewCount || 1}} reviews)</span>
+                </div>
+                <div class="flex flex-wrap gap-3">
+                  <button  class="px-6 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 text-sm sm:text-base md:text-lg sm:px-4 md:px-6">
+                    <NuxtLink :to="`/edit/${novel.id}/new`">
+                    Write New Chapter
+                  </NuxtLink>
+                  </button>
+                  <button class="px-6 py-2 border border-gray-300 rounded-md hover:bg-gray-50 text-sm sm:text-base md:text-lg sm:px-4 md:px-6">
+                      <NuxtLink :to="`/edit/${novel.id}/${draftChapters[0]?.id}/draft/false`">
+                        Continue Writing
+                      </NuxtLink>
+                  </button>
+                  <button @click="openModal('status', 'Set Status', 'status')" class="px-6 py-2 border border-gray-300 rounded-md hover:bg-gray-50 text-sm sm:text-base md:text-lg sm:px-4 md:px-6">
+                    Set Status
+                  </button>
+                </div>
+               <!-- Management Buttons -->
+               <div class="flex flex-wrap gap-3 mt-6">
+                  <button @click="openModal('title', 'Edit Title', 'title')" class="responsive-btn2 bg-gray-100 text-gray-700 hover:bg-gray-200 ">
+                    Edit Title
+                  </button>
+                  <button @click="openModal('author', 'Edit Author', 'author')" class="px-4 py-2 bg-gray-100 text-gray-700 rounded-md hover:bg-gray-200 text-sm md:text-base lg:text-lg lg:px-6 lg:py-3 transition-all">
+                    Edit Author
+                  </button>
+                  <button @click="openModal('summary', 'Edit Summary', 'summary')" class="px-4 py-2 bg-gray-100 text-gray-700 rounded-md hover:bg-gray-200 text-sm md:text-base lg:text-lg lg:px-6 lg:py-3 transition-all">
+                    Edit Summary
+                  </button>
+                  <button @click="openModal('genre', 'Edit Genre', 'genre')" class="px-4 py-2 bg-gray-100 text-gray-700 rounded-md hover:bg-gray-200 text-sm md:text-base lg:text-lg lg:px-6 lg:py-3 transition-all">
+                    Edit Genre
+                  </button>
+                  <button @click="openModal('tags', 'Edit Tags', 'tags')" class="px-4 py-2 bg-gray-100 text-gray-700 rounded-md hover:bg-gray-200 text-sm md:text-base lg:text-lg lg:px-6 lg:py-3 transition-all">
+                    Edit Tags
+                  </button>
+                  <button @click="deleteNovel" class="px-4 py-2 bg-red-600 text-white rounded-md hover:bg-red-700 text-sm md:text-base lg:text-lg lg:px-6 lg:py-3 transition-all">
+                    <!-- Delete Novel -->
+                     <Trash />
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+  
+        <!-- Modal Component -->
+        <div v-if="isModalOpen" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center">
+          <div class="bg-white rounded-lg shadow-lg w-96 p-6 sm:p-8">
+            <h2 class="text-lg sm:text-xl font-bold mb-4">{{ modalTitle }}</h2>
+  
+            <!-- Dynamic Input Field -->
+            <div v-if="modalType === 'title' || modalType === 'author'">
+              <input 
+                type="text" 
+                v-model="modalInput" 
+                class="w-full border rounded-md p-2 mb-4" 
+                placeholder="Enter new value" 
+              />
+            </div>
+            <!-- Dynamic Input Field -->
+              <div v-if="modalType === 'summary'">
+              <input 
+                type="textarea" 
+                v-model="modalInput" 
+                class="w-full border rounded-md p-2 mb-4" 
+                placeholder="Enter new value" 
+              />
+            </div>
+            <div v-if="modalType === 'genre'">
+              <select v-model="modalInput" class="w-full border rounded-md p-2 mb-4">
+                <option v-for="genre in genres" :key="genre" :value="genre">{{ genre }}</option>
+              </select>
+            </div>
+            <div v-if="modalType === 'status'">
+              <select v-model="modalInput" class="w-full border rounded-md p-2 mb-4">
+                <option v-for="stat in statutypes" :key="stat" :value="stat">{{ stat }}</option>
+              </select>
+            </div>
+            <div v-if="modalType === 'tags'">
+              <div class="flex gap-2 mb-4">
+                <input 
+                  type="text" 
+                  v-model="tagSearch" 
+                  @input="searchTags" 
+                  placeholder="Search for tags" 
+                  class="flex-1 border rounded-md p-2"
+                />
+                <button 
+                  @click="addTag" 
+                  class="px-4 py-2 bg-blue-600 text-white rounded-md"
+                >
+                  Add
+                </button>
+              </div>
+              <div class="flex flex-wrap gap-2">
+                <span 
+                  v-for="tag in selectedTags" 
+                  :key="tag" 
+                  class="bg-blue-50 text-blue-600 px-3 py-1 rounded-full"
+                >
+                  {{ tag }}
+                  <button 
+                    @click="removeTag(tag)" 
+                    class="ml-2 text-red-600 hover:underline"
+                  >
+                    x
+                  </button>
+                </span>
+              </div>
+            </div>
+  
+            <!-- Modal Actions -->
+            <div class="flex justify-end gap-2">
+              <button 
+                @click="closeModal" 
+                class="px-4 py-2 sm:px-6 sm:py-3 border rounded-md hover:bg-gray-100 text-sm sm:text-base"
+              >
+                Cancel
+              </button>
+              <button 
+                @click="submitModal" 
+                class="px-4 py-2 sm:px-6 sm:py-3 bg-blue-600 text-white rounded-md hover:bg-blue-700 text-sm sm:text-base"
+              >
+                Submit
+              </button>
+            </div>
+          </div>
+        </div>
+  
+    
+        <!-- Navigation Tabs -->
+        <div class="max-w-7xl mx-auto px-4 mt-6">
+          <div class="flex border-b">
+            <button 
+              v-for="tab in tabs" 
+              :key="tab.id"
+              @click="activeTab = tab.id"
+              :class="[
+                'px-6 py-3 font-medium',
+                activeTab === tab.id ? 'border-b-2 border-blue-600 text-blue-600' : 'text-gray-600'
+              ]"
+            >
+              {{ tab.name }}
+            </button>
+          </div>
+    
+          <!-- Tab Content -->
+          <div class="mt-6">
+            <!-- About Tab -->
+            <div v-if="activeTab === 'about'" class="grid grid-cols-1 gap-6 lg:grid-cols-12">
+              <div class="lg:col-span-8 order-1 lg:order-1">
+                <div class="bg-white rounded-lg shadow p-6">
+                  <h2 class="text-xl font-bold mb-4">Novel Summary</h2>
+                  <div class="space-y-4">
+                    <Tags/>
+                    <div class="flex flex-wrap gap-2 mb-4">
+                      <span 
+                        v-for="tag in novel.tags" 
+                        :key="tag"
+                        class="px-3 py-1 bg-blue-50 text-blue-600 rounded-full text-sm"
+                      > 
+                      <div>
+                        {{ tag.name }}
+                      </div>
+                      </span>
+                    </div>
+                    <p class="text-gray-600 leading-relaxed" v-html="novel.summary"></p>
+                  </div>
+                </div>
+              </div>
+    
+                <!-- Similar Novels -->
+              <div class="lg:col-span-8 order-3 lg:order-3">
+                <div class="mt-6 bg-white rounded-lg shadow p-6">
+                  <h2 class="text-xl font-bold mb-4">Similar Novels</h2>
+                  <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
+                    <div v-for="novel in similarNovels" :key="novel.id" class="space-y-2">
+                      <img 
+                        :src="novel.coverImage" 
+                        :alt="novel.title"
+                        class="w-full aspect-[3/4] object-cover rounded-md"
+                      />
+                      <h3 class="font-medium line-clamp-2">{{ novel.title }}</h3>
+                      <div class="flex items-center text-sm text-gray-500">
+                        <Icon 
+                          :name="novel.status === 'Ongoing' ? 'lucide:loader' : 'lucide:check'" 
+                          class="w-4 h-4 mr-1"
+                        />
+                        {{ novel.status }}
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+    
+              <!-- Novel Details Sidebar -->
+              <div class="lg:col-span-4 order-2 lg:order-2 space-y-6">
+                <div class="bg-white rounded-lg shadow p-6">
+                  <h2 class="text-lg font-bold mb-4">Details</h2>
+                  <div class="space-y-4">
+                    <div class="flex justify-between">
+                      <span class="text-gray-600">Status</span>
+                      <span>{{ novel.status }}</span>
+                    </div>
+                    <div class="flex justify-between">
+                      <span class="text-gray-600">Author</span>
+                      <span>{{ novel.author }}</span>
+                    </div>
+                    <div class="flex justify-between">
+                      <span class="text-gray-600">Genre</span>
+                      <span>{{ novel.genre }}</span>
+                    </div>
+                    <div class="flex justify-between">
+                      <span class="text-gray-600">Rankings</span>
+                      <div class="space-y-1 text-right">
+                        <div>Weekly #{{ novel.weeklyRank }}</div>
+                        <div>Monthly #{{ novel.monthlyRank }}</div>
+                        <div>All Time #{{ novel.allTimeRank }}</div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+    
+            <!-- Table of Contents Tab -->
+            <div v-if="activeTab === 'chapters'" class="bg-white rounded-lg shadow">
+              <div class="p-4 border-b">
+                <div class="flex justify-between items-center">
+                  <h2 class="text-xl font-bold">Chapters</h2>
+                  <div class="flex gap-2">
+                    <button class="px-4 py-2 text-sm border rounded-md hover:bg-gray-50">
+                      Latest
+                    </button>
+                    <button class="px-4 py-2 text-sm border rounded-md hover:bg-gray-50">
+                      First
+                    </button>
+                  </div>
+                </div>
+              </div>
+              <div class="divide-y">
+                <div 
+                  v-for="chapter in novel.chapterList" 
+                  :key="chapter.id"
+                  class="p-4 hover:bg-gray-50 flex justify-between items-center cursor-pointer"
+                >
+                  <span>Chapter {{ chapter.chapterNumber }}: {{ chapter.title }}</span>
+                  <span class="text-gray-500 text-sm">{{ formatDate(chapter.uploadedAt) }}</span>
+                  <div class="flex gap-2">
+                    <button 
+                      @click="goTo(`/edit/${novel.id}/${chapter.id}/pub/false`)"
+                      class="px-3 py-1 text-sm border rounded-md hover:bg-gray-100"
+                    >
+                      <Pencil />
+                    </button>
+                    <button
+                      @click="deleteChapterMode(chapter.id, 'pub')"
+                      class="px-3 py-1 text-sm border text-red-600 rounded-md hover:bg-red-50"
+                    >
+                      <FileX/>
+                    </button>
+                  </div>
+                          
+                </div>
+              </div>
+            </div>
+    
+            <!-- Reviews Tab -->
+            <div v-if="activeTab === 'reviews'" class="bg-white rounded-lg shadow p-6">
+              <div class="flex justify-between items-center mb-6">
+                <h2 class="text-xl font-bold">Reviews</h2>
+                <button class="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700">
+                  Write Review
+                </button>
+              </div>
+              <div class="space-y-6">
+                <div v-for="review in novel.reviews" :key="review.id" class="border-b pb-6">
+                  <div class="flex justify-between items-start mb-2">
+                    <div class="flex items-center gap-2">
+                      <img 
+                        :src="review.userAvatar" 
+                        :alt="review.userName"
+                        class="w-10 h-10 rounded-full"
+                      />
+                      <div>
+                        <div class="font-medium">{{ review.userName }}</div>
+                        <div class="text-sm text-gray-500">{{ review.date }}</div>
+                      </div>
+                    </div>
+                    <div class="flex">
+                      <Icon 
+                        v-for="i in 5" 
+                        :key="i"
+                        :name="i <= review.rating ? 'lucide:star' : 'lucide:star-off'" 
+                        class="w-4 h-4" 
+                        :class="i <= review.rating ? 'text-yellow-400' : 'text-gray-300'"
+                      />
+                    </div>
+                  </div>
+                  <p class="text-gray-600">{{ review.content }}</p>
+                </div>
+              </div>
+            </div>
+  
+  <!-- Unpublished Chapters Tab -->
+  <div v-if="activeTab === 'unpublished'" class="bg-white rounded-lg shadow">
+    <div class="p-4 border-b">
+      <div class="flex justify-between items-center">
+        <h2 class="text-xl font-bold">Unpublished Chapters</h2>
+        <div class="flex gap-2">
+          <button 
+            v-if="unpublishedChapters.length > 0"
+            @click="selectAllChapters"
+            class="px-4 py-2 text-sm border rounded-md hover:bg-gray-50"
+          >
+            {{ selectedChapters.length === unpublishedChapters.length ? 'Deselect All' : 'Select All' }}
+          </button>
+          <button
+            v-if="unpublishedChapters.length > 0"
+            @click="toggleEditOrder"
+            class="px-4 py-2 text-sm border rounded-md hover:bg-gray-50"
+          >
+            {{ isEditingOrder ? 'Save Order' : 'Edit Order' }}
+          </button>
+          <button 
+            v-if="selectedChapters.length > 0"
+            @click="publishSelectedChapters"
+            class="px-4 py-2 text-sm bg-blue-600 text-white rounded-md hover:bg-blue-700"
+          >
+            Publish Selected
+          </button>
+        </div>
+      </div>
+    </div>
+    
+    <div v-if="unpublishedChapters.length === 0" class="p-8 text-center">
+      <p class="text-gray-500 mb-4">No unpublished chapters yet</p>
+      <button 
+        @click="router.push(`/write/${novel.id}/new`)"
+        class="px-6 py-3 bg-blue-600 text-white rounded-md hover:bg-blue-700"
+      >
+        Write New Chapter
+      </button>
+    </div>
+    
+    <Container
+      v-else
+      :get-child-payload="i => reorderedChapters[i]"
+      @drop="updateChapterOrder"
+      drag-handle-selector=".drag-handle"
+      :lock-axis="isEditingOrder ? 'y' : null"
+      :animation-duration="200"
+      group-name="chapters"
+    >
+      <Draggable v-for="chapter in reorderedChapters" :key="chapter.id">
+        <div 
+          class="p-4 hover:bg-gray-50 flex items-center cursor-pointer border-b last:border-b-0"
+          :class="{ 'bg-blue-50': isDragging }"
+        >
+          <div class="drag-handle cursor-move px-2" v-if="isEditingOrder">
+            <svg class="w-6 h-6 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 8h16M4 16h16"></path>
+            </svg>
+          </div>
+          <input
+            type="checkbox"
+            :checked="selectedChapters.includes(chapter.id)"
+            @change="selectChapter(chapter.id)"
+            class="mr-4"
+          />
+          <div class="flex-1">
+            <span>Chapter {{ chapter.chapterNumber }}: {{ chapter.title }}</span>
+            <span class="text-gray-500 text-sm ml-2">{{ chapter.lastModified }}</span>
+          </div>
+          <div class="flex gap-2">
+            <button 
+              @click="goTo(`/edit/${novel.id}/${chapter.id}/unpub/false`)"
+              class="px-3 py-1 text-sm border rounded-md hover:bg-gray-100"
+            >
+              <Pencil />
+            </button>
+            <button
+              @click="deleteChapterMode(chapter.id, 'unpub')"
+              class="px-3 py-1 text-sm border text-red-600 rounded-md hover:bg-red-50"
+            >
+              <FileX />
+          </button>
+          </div>
+        </div>
+      </Draggable>
+    </Container>
+  </div>
+
+<!-- Drafts Tab -->
+<div v-if="activeTab === 'drafts'" class="bg-white rounded-lg shadow">
+  <div class="p-4 border-b">
+    <div class="flex justify-between items-center">
+      <h2 class="text-xl font-bold">Draft Chapters</h2>
+    </div>
+  </div>
+
+  <div v-if="draftChapters.length === 0" class="p-8 text-center">
+    <p class="text-gray-500 mb-4">No drafts yet</p>
+    <button 
+      @click="router.push(`/write/${novel.id}/new`)"
+      class="px-6 py-3 bg-blue-600 text-white rounded-md hover:bg-blue-700"
+    >
+      Start New Draft
+    </button>
+  </div>
+
+  <div v-else class="divide-y">
+    <div 
+      v-for="draft in draftChapters" 
+      :key="draft.id"
+      class="p-4 hover:bg-gray-50 flex justify-between items-center"
+    >
+      <div>
+        <span class="font-medium">{{ draft.title || 'Untitled Draft' }}</span>
+        <span class="text-gray-500 text-sm ml-2">Last modified: {{ formatDate(draft.updatedAt) }}</span>
+      </div>
+      <div class="flex gap-2">
+        <button 
+          @click="goTo(`${novel.id}/${draft.id}/draft/false`)"
+          class="px-3 py-1 text-sm border rounded-md hover:bg-gray-100"
+        >
+          <Pencil></Pencil>
+      </button>
+        <button 
+          @click="deleteChapterMode(draft.id, 'draft')"
+          class="px-3 py-1 text-sm border border-red-300 text-red-600 rounded-md hover:bg-red-50"
+        >
+          <FileX></FileX>
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </template>
+  
+  <script>
+  import { Container, Draggable } from 'vue3-smooth-dnd';
+  import { ref, reactive, computed, onMounted, watch } from 'vue';
+  import { useRoute, useRouter } from 'vue-router';
+  import { BookOpen, Eye, Users, Star, StarOff, Pencil, FileX, Trash, Tags, Tag  } from 'lucide-vue-next';
+  import { getSessionToken, getApiKey } from '../utils/utils';
+  import LoadingAnimation from '~/components/LoadingAnimation.vue';
+
+  
+  
+  export default {
+    components: {Container,Draggable, BookOpen, Eye, Users, Star, StarOff,Pencil, FileX, Trash, Tag, Tags },
+    setup() {
+      const params = useRoute().params;
+      const router = useRouter();
+      const { $store } = useNuxtApp();
+      const headers = ref({})
+      const isLatestDisabled = ref(false);
+      const isFirstDisabled = ref(true);
+      const activeTab = ref('about');
+      const tabs = [
+        { id: 'about', name: 'About' },
+        { id: 'chapters', name: 'Table of Contents' },
+        { id: 'unpublished', name: 'Unpublished Chapters' },
+        { id: 'drafts', name: 'Drafts' },
+        { id: 'reviews', name: 'Reviews' },
+      ];
+      const similarNovels = ref([]);
+      const genres = ref(["Fantasy", "Romance", "Thriller", "Sci-Fi", "Adventure"]);
+  
+      const statutypes = ref(["Ongoing", "Hiatus", "Completed"])
+  
+      const isModalOpen = ref(false);
+      const modalType = ref("");
+      const modalTitle = ref("");
+      const modalInput = ref("");
+      const tagSearch = ref("");
+      const selectedTags = ref([]);
+      const initialTags = ref([]);
+  
+      const novelData = reactive({});
+      const updateData = reactive({
+        title: "",
+        author: "",
+        genre: "",
+        summary: "",
+        tags: [],
+        status: "",
+      });
+  
+      const resetUpdateData = () => {
+        updateData.title = ""
+        updateData.author = ""
+        updateData.genre = ""
+        updateData.summary = ""
+        updateData.tags = []
+        updateData.status = ""
+      };
+
+      const formatDate = (dateString) => {
+        const date = new Date(dateString);
+        const options = { weekday: 'short', month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' };
+        return new Intl.DateTimeFormat('en-US', options).format(date);
+      };
+
+    const isEditingOrder = ref(false);
+    const reorderedChapters = ref([]);
+
+    const toggleEditOrder = async () => {
+      if (isEditingOrder.value) {
+        // Save the edited order when toggling off
+        try {
+          await saveChapterOrder();
+          alert('Chapter order saved successfully!');
+        } catch (error) {
+          alert('Failed to save chapter order. Please try again.');
+        }
+      }
+      isEditingOrder.value = !isEditingOrder.value;
+    };
+
+    const saveChapterOrder = async () => {
+      // make a new array which will only contain object with id and chapterNumber from the array of objects reorderedChapters
+      const updatedChapters = reorderedChapters.value
+      const headrs = await $store.getNormalHeaders()
+      const res = await $fetch(`${API}novels/${params.id}/chapters/order?unpub`,{
+        method: "PUT",
+        headers: headrs,
+        body: JSON.stringify(updatedChapters)
+      })
+    };
+
+    const updateChapterOrder = ({ removedIndex, addedIndex }) => {
+      // if (removedIndex === null || addedIndex === null) return;
+
+      const chapters = [...reorderedChapters.value];
+      const [movedChapter] = chapters.splice(removedIndex, 1);
+      chapters.splice(addedIndex, 0, movedChapter);
+
+      // Update reordered chapters
+      reorderedChapters.value = chapters.map((chapter, index) => ({
+        ...chapter,
+        chapterNumber: index + 1 // Assuming chapterNumber is the new order index
+      }));
+    };
+
+    const deleteChapter = async (chapterId) => {
+      if (!confirm('Are you sure you want to delete this chapter?')) return;
+
+      try {
+        await $fetch(`${API}chapters/${chapterId}`, { method: 'DELETE' });
+        unpublishedChapters.value = unpublishedChapters.value.filter(ch => ch.id !== chapterId);
+      } catch (error) {
+        alert('Failed to delete chapter. Please try again.');
+      }
+    };
+
+    const deleteChapterMode = async(chapter_id, mode) => {
+      if (!confirm('Are you sure you want to delete this chapter?')) return;
+      var resp;
+      try {
+        resp = await $fetch(`${API}novels/${novel.value.id}/chapters/edit/${chapter_id}?query=${mode}`, 
+        { 
+          method: 'DELETE',
+          headers: headers.value
+        });
+        if(mode === "unpub"){
+          reorderedChapters.value = reorderedChapters.value.filter(ch => ch.id !== chapter_id);
+        }else if (mode==="draft"){
+          draftChapters.value = draftChapters.value.filter(ch => ch.id !== chapter_id);
+        }else if(mode ==="pub"){
+          chapterList.value = chapterList.value.filter(ch => ch.id !== chapterp_id);
+        }
+      } catch (error) {
+        alert('Failed to delete chapter. Please try again.');
+      }
+    }
+
+      const goTo = (path) =>{
+        console.log(path)
+        router.push(path)
+      };
+  
+      const openModal = (type, title, field) => {
+        isModalOpen.value = true;
+        modalType.value = type;
+        modalTitle.value = title;
+        modalInput.value = field ? novelData.value[field] : "";
+  
+        if (type === 'tags') {
+          //edge case if tags in the novel data is empty or missing
+          try{
+            selectedTags.value = novelData.value.tags.map(tag => tag.name); // Initialize with existing tags
+            initialTags.value = novelData.value.tags.map(tag => tag.name);
+          }catch(error){
+            selectedTags.value = [];
+          }
+        }
+      };
+  
+      const closeModal = () => {
+        isModalOpen.value = false;
+        modalType.value = "";
+        modalTitle.value = "";
+        modalInput.value = "";
+        tagSearch.value = "";
+        resetUpdateData();
+      };
+  
+      function prepareRequestBody(originalData, formData) {
+          const requestBody = {};
+  
+          // Helper to check if a field has changed
+          const hasChanged = (field) =>
+            originalData[field] !== undefined && originalData[field] !== formData[field];
+  
+          // Check and include only changed fields
+          if (hasChanged("title")) requestBody.title = formData.title;
+          if (hasChanged("summary")) requestBody.summary = formData.summary;
+          if (hasChanged("genre")) requestBody.genre = formData.genre;
+          if (hasChanged("author")) requestBody.author = formData.author;
+          if (hasChanged("status")) requestBody.status = formData.status
+  
+          // Handle tags separately
+          if (JSON.stringify(originalData.tags) !== JSON.stringify(formData.tags)) {
+            requestBody.tags = formData.tags || [];
+          }
+  
+          return requestBody;
+        }
+  
+  
+      const submitModal = async() => {
+        if (modalType.value === "tags") {
+          if (JSON.stringify(initialTags.value) !== JSON.stringify(selectedTags.value)) {
+              // If tags have changed, update the tags field
+              
+              updateData.tags = selectedTags.value.map((tag) => ({ name: tag }));
+          } else {
+              closeModal();
+              return;
+          }
+        } else {
+          const fieldMap = {
+            title: "title",     // Use the field name as the id
+            author: "author",
+            genre: "genre",
+            summary: "summary",
+            tags: "tags",        // This will map directly to the tags field
+            status: "status"
+          };
+          const field = fieldMap[modalType.value];
+          if (field) updateData[field] = modalInput.value;
+        }
+        // headers.value = await $store.getNormalHeaders()
+        const response = await $fetch(`${API}update/novel/${params.id}/`, {
+          method: 'PUT',
+          headers: headers.value,
+          body: JSON.stringify(updateData)
+        })
+  
+        if (response.statusCode === 200) {
+            novel.value = response.body;
+            novelData.value = response.body;
+        } else {
+          alert(response.message);
+        }
+        
+        closeModal();
+      };
+  
+  
+      // const submitModal = () => {
+      //   if (modalType.value === "text" || modalType.value === "select") {
+      //     const field = modalType.value === "text" ? "title" : "genre";
+      //     novel.value[field] = modalInput.value;
+      //   } else if (modalType.value === "tags") {
+      //     novel.value.tags = selectedTags.value.map((tag) => ({ name: tag }));
+      //   }
+      //   closeModal();
+      // };
+  
+      const searchTags = () => {
+        console.log(`Searching tags for: ${tagSearch.value}`);
+      };
+  
+      const addTag = () => {
+        console.log(tagSearch.value);
+        if (tagSearch.value && !selectedTags.value.includes(tagSearch.value)) {
+          selectedTags.value.push(tagSearch.value);
+        }
+        tagSearch.value = "";
+        modalInput.value = "";
+      };
+  
+      const removeTag = (tag) => {
+          selectedTags.value = selectedTags.value.filter((t) => t !== tag); // Remove tag
+      };
+  
+      const deleteNovel = async () => {
+        if (confirm("Are you sure you want to delete this novel?")) {
+            // const headers = await $store.getNormalHeaders()
+            const response = await $fetch(`${API}delete/novel/${params.id}`, {
+              method: 'DELETE',
+              headers: headers.value,
+            });
+            if (response.statusCode === 200) {
+              router.push("/write");
+            }else{
+              alert(response.message);
+            }
+        }
+      };
+  
+      const novel = ref(null);
+  
+      // const fetchNovel = async () => {
+      //   const response = await $fetch(`${API}novel?id=${params.id}`);
+      //   console.log(response.status);
+      //   novel.value = response.body.novel;
+      // };
+  
+      const getAllGenres = async () => {
+        const response = await $fetch(`${API}all_genres`);
+        genres.value = response.body;
+        console.log(genres);
+      };
+
+      const getAllDrafts = async () => {
+        const resp = await $fetch(`${API}novels/${params.id}/get?query=draft`,{
+          headers: headers.value,
+        })
+        if(resp.statusCode === 200){
+          draftChapters.value = resp.body.sort((a, b) => new Date(b.updatedAt) - new Date(a.updatedAt));
+
+          $store.setChapters(params.id, resp.body, "draft")  //save in the drafts
+        }
+      }
+
+      const getAllUnpubs = async () => {
+        const resp = await $fetch(`${API}novels/${params.id}/get?query=unpub`,{
+          headers: headers.value,
+        })
+        if(resp.statusCode === 200){
+          unpublishedChapters.value = resp.body.sort((a, b) => a.chapterNumber - b.chapterNumber);
+          reorderedChapters.value = [...resp.body]; 
+          $store.setChapters(params.id, resp.body, "unpub")  //save in the drafts
+        }
+      }
+
+      // Watch the activeTab and run getAllDrafts if activeTab is 'drafts'
+      watch(activeTab, (newTab) => {
+        if (newTab === 'drafts') {
+          getAllDrafts()
+        }else if(newTab == 'unpublished'){
+          getAllUnpubs()
+        }
+      })
+        
+      onMounted(async() => {
+        try{
+          headers.value = await $store.getNormalHeaders()
+          const data = await $fetch(`${API}novels/${params.id}/edit/`,
+            {
+              method: 'GET',
+              headers: headers.value,
+            }
+          );
+
+          if(data.statusCode != 200){
+            router.push(`/novel/${params.id}`)
+          }else{
+            novel.value = data.body;
+            novelData.value = data.body;
+            await getAllGenres()
+            
+          }
+  
+        }catch(error){
+          alert("Please Log in To use this function")
+          router.push(`/novel/${params.id}`)
+        }
+        await getAllDrafts()
+      });
+  
+      const toggleChapterOrder = (order) => {
+        novel.value.chapterList.reverse();
+        isLatestDisabled.value = order === "latest";
+        isFirstDisabled.value = order === "first";
+      };
+  
+      const latest = () => toggleChapterOrder("latest");
+      const first = () => toggleChapterOrder("first");
+  
+  
+      function goToChapter(chapter_num) {
+        router.push(`/novel/${params.id}/chapter/${chapter_num}`);
+      }
+
+
+      const unpublishedChapters = ref([]);
+    const draftChapters = ref([]);
+    const selectedChapters = ref([]);
+    const isDragging = ref(false);
+
+    // Drag and drop handlers for vue-smooth-dnd
+    const onDrop = ({ removedIndex, addedIndex }) => {
+      if (removedIndex === null || addedIndex === null) return;
+      
+      const chapters = [...unpublishedChapters.value];
+      const [item] = chapters.splice(removedIndex, 1);
+      chapters.splice(addedIndex, 0, item);
+      unpublishedChapters.value = chapters;
+    };
+
+    const getDragHandleSelector = () => '.drag-handle';
+
+    const selectChapter = (chapterId) => {
+      const index = selectedChapters.value.indexOf(chapterId);
+      if (index === -1) {
+        selectedChapters.value.push(chapterId);
+      } else {
+        selectedChapters.value.splice(index, 1);
+      }
+    };
+
+    const selectAllChapters = () => {
+      if (selectedChapters.value.length === unpublishedChapters.value.length) {
+        selectedChapters.value = [];
+      } else {
+        selectedChapters.value = unpublishedChapters.value.map(chapter => chapter.id);
+      }
+    };
+
+    const publishSelectedChapters = async () => {
+      try {
+        const response = await $fetch('${API}publish-chapters', {
+          method: 'POST',
+          headers: headers.value,
+          body: JSON.stringify({
+            novelId: params.id,
+            chapterIds: selectedChapters.value
+          })
+        });
+        
+        if (response.statusCode === 200) {
+          unpublishedChapters.value = unpublishedChapters.value.filter(
+            chapter => !selectedChapters.value.includes(chapter.id)
+          );
+          selectedChapters.value = [];
+        }
+      } catch (error) {
+        alert('Failed to publish chapters. Please try again.');
+      }
+    };
+
+    const deleteDraft = async (draftId) => {
+      if (confirm('Are you sure you want to delete this draft?')) {
+        try {
+
+          const response = await $fetch(`${API}drafts/${draftId}`, {
+            method: 'DELETE',
+            headers: headers.value
+          });
+          
+          if (response.statusCode === 200) {
+            draftChapters.value = draftChapters.value.filter(
+              draft => draft.id !== draftId
+            );
+          }
+        } catch (error) {
+          alert('Failed to delete draft. Please try again.');
+        }
+      }
+    };
+    
+
+    onUnmounted(async () => {
+      // await $store.removeChapters(params.id, "draft")
+      // await $store.removeChapters(params.id, "unpub")
+      // await $store.removeChapters(params.id, "pub")
+    })
+  
+      return {
+        novel,
+        tabs,
+        activeTab,
+        isLatestDisabled,
+        isFirstDisabled,
+        latest,
+        first,
+        goToChapter,
+        openModal,
+        closeModal,
+        submitModal,
+        searchTags,
+        addTag,
+        removeTag,
+        deleteNovel,
+        isModalOpen,
+        modalType,
+        modalTitle,
+        modalInput,
+        tagSearch,
+        selectedTags,
+        similarNovels,
+        genres,
+        statutypes,
+        unpublishedChapters,
+        draftChapters,
+        selectedChapters,
+        isDragging,
+        onDrop,
+        getDragHandleSelector,
+        selectChapter,
+        selectAllChapters,
+        publishSelectedChapters,
+        deleteDraft,
+        tabs,
+        goTo,
+        isEditingOrder,
+        reorderedChapters,
+        toggleEditOrder,
+        saveChapterOrder,
+        updateChapterOrder,
+        deleteChapter,
+        deleteChapterMode,
+        formatDate
+      };
+    }
+    
+  }
+  
+  </script>
+  
+  <style scoped>
+  button {
+    font-size: 0.875rem; /* Default (small screens) */
+    padding: 0.5rem 1rem;
+  }
+  
+  @media (min-width: 768px) {
+    button {
+      font-size: 1rem; /* Medium screens */
+      padding: 0.75rem 1.25rem;
+    }
+  }
+  
+  @media (min-width: 1024px) {
+    button {
+      font-size: 1.125rem; /* Large screens */
+      padding: 1rem 1.5rem;
+    }
+  }xz
+  .smooth-dnd-container {
+    min-height: 30px;
+  }
+  .smooth-dnd-draggable-wrapper {
+    overflow: visible;
+  }
+  </style>
+  

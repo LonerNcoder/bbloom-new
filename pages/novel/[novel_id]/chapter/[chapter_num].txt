@@ -1,0 +1,122 @@
+<template>
+<div class="min-h-screen pb-8">
+<!-- Show loading spinner while fetching -->
+<LoadingAnimation v-if="loading"></LoadingAnimation>
+<!-- Main Content -->
+<div v-else>
+<!-- Header -->
+<div class="top-0 bg-[--background-color] shadow-sm z-10 exclude-toggle">
+<div class="max-w-6xl mx-auto px-4 py-4">
+<div class="flex justify-between items-center">
+<div class="flex gap-4">
+<!-- Back to Novel -->
+<button
+@click="backToNovel"
+class="px-4 py-2 flex items-center gap-2 border rounded-md hover:bg-gray-50"
+>
+<Book class="w-4 h-4"></Book>
+<span class="font-medium text-sm">Back</span>
+</button>
+<button
+class="px-4 py-2 flex items-center gap-2 border rounded-md hover:bg-gray-50"
+@click="navigateChapter(-1)"
+:disabled="!hasPreviousChapter"
+:class="{ 'opacity-50 cursor-not-allowed': !hasPreviousChapter }"
+>
+<ChevronLeft name="lucide:chevron-left" class="w-4 h-4" />
+Previous
+</button>
+</div>
+
+<div class="flex items-center gap-4">
+<button
+class="px-4 py-2 flex items-center gap-2 border rounded-md hover:bg-gray-50"
+@click="navigateChapter(1)"
+:disabled="!hasNextChapter"
+:class="{ 'opacity-50 cursor-not-allowed': !hasNextChapter }"
+>
+Next
+<ChevronRight name="lucide:chevron-right" class="w-4 h-4" />
+</button>
+</div>
+</div>
+</div>
+</div>
+<!-- Chapter Content -->
+<div
+class="max-w-4xl mx-auto px-4 mt-8"
+ref="contentRef"
+@touchstart="handleTouchStart"
+@touchend="handleTouchEnd"
+@click="handleContentClick"
+>
+<div v-if="chapter" ref="chapterBody" id="chapter-body" class="rounded-lg shadow p-6">
+<h1 class="text-2xl font-bold mb-6">
+Chapter {{ chapter.chapterNumber }}: {{ chapter.title }}
+</h1>
+<iframe v-show="!iframeLoading" ref="ifr" :srcdoc="(processContent(chapter.content))" width="100%" height="600" scrolling="auto" @load="handleIframeLoad" ></iframe>
+<!-- <div class="prose max-w-none" v-dompurify-html="chapter.content"></div> -->
+</div>
+<!-- Navigation Buttons -->
+<div class="flex justify-between mt-8">
+<button
+class="px-4 py-2 flex items-center gap-2 border rounded-md hover:bg-gray-50"
+@click="navigateChapter(-1)"
+:disabled="!hasPreviousChapter"
+:class="{ 'opacity-50 cursor-not-allowed': !hasPreviousChapter }"
+>
+<ChevronLeft class="w-4 h-4" />
+Previous Chapter
+</button>
+<button
+class="px-4 py-2 flex items-center gap-2 border rounded-md hover:bg-gray-50"
+@click="navigateChapter(1)"
+:disabled="!hasNextChapter"
+:class="{ 'opacity-50 cursor-not-allowed': !hasNextChapter }"
+>
+Next Chapter
+<ChevronRight class="w-4 h-4" />
+</button>
+</div>
+
+<FloatingSettings v-if="ifr"
+:fontsize="parseInt(settings.fontSize)"
+:brightness="parseInt(settings.brightness)"
+:backgroundColor="settings.backgroundColor"
+:bookmark="settings.isBookmarked"
+:isMobile="isMobile"
+:isButtonVisible="isButtonVisible"
+:gestureEnabled="settings.gestureEnabled"
+@fontsizeChanged="handleFontSizeChange"
+@brightnessChanged="handleBrightnessChange"
+@backgroundChanged="handleBackgroundChange"
+@bookmark="handleBookmark"
+@summarize="handleSummarize"
+@gesture="handleGesture"
+></FloatingSettings>
+<!-- Comments Section -->
+<div class="bg-white rounded-lg shadow mt-8 p-6 exclude-toggle">
+<h2 class="text-xl font-bold mb-4">Comments</h2>
+<div class="space-y-4">
+<div v-for="comment in comments" :key="comment.id" class="border-b pb-4">
+<div class="flex items-center gap-2 mb-2">
+<img
+:src="comment.userAvatar"
+:alt="comment.userName"
+class="w-8 h-8 rounded-full"
+/>
+<div>
+<div class="font-medium">{{ comment.userName }}</div>
+<div class="text-sm text-gray-500">{{ comment.date }}</div>
+</div>
+</div>
+<p class="text-gray-600">{{ comment.content }}</p>
+</div>
+<!-- <p v-if="!comments.length" class="text-gray-500">
+No comments yet. Be the first to comment!
+</p> -->
+</div>
+</div>
+</div>
+</div> </div>
+</template>

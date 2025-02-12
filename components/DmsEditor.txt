@@ -1,0 +1,888 @@
+<!-- edit.[novel][chapter_id].vue -->
+<template>
+  <LoadingAnimation v-if="loading"></LoadingAnimation>
+    <!-- <client-only fallback-tag="div" fallback="Loading activeEditor.value..."> -->
+    <div class="min-h-screen flex flex-col bg-gray-50">
+      <!-- Top Navigation Bar -->
+      <nav class="bg-white border-b px-4 py-2 flex items-center justify-between">
+        <div class="flex items-center space-x-2">
+          <h1 class="text-xl font-bold">{{chapterTitle || "no title"}}</h1>
+
+          <NuxtLink :to="`/edit/${novel_id}`" class="inline-flex items-center gap-2 px-3 py-1.5 text-sm hover:bg-gray-100 rounded-md">
+            <ArrowBigLeft name="lucide:save" class="w-4 h-4" />
+            Back
+          </NuxtLink>
+             <!-- Save Button with Dropdown -->
+             <div class="relative inline-block">
+              <button 
+                @click="toggleSaveMenu"
+                class="inline-flex items-center gap-2 px-3 py-1.5 text-sm hover:bg-gray-100 rounded-md"
+                ref="saveButtonRef"
+              >
+                <Save name="lucide:save" class="w-4 h-4" />
+                Save
+              </button>
+              
+              <!-- Save Options Dropdown -->
+              <transition
+                enter-active-class="transition ease-out duration-100"
+                enter-from-class="transform opacity-0 scale-95"
+                enter-to-class="transform opacity-100 scale-100"
+                leave-active-class="transition ease-in duration-75"
+                leave-from-class="transform opacity-100 scale-100"
+                leave-to-class="transform opacity-0 scale-95"
+              >
+                <div v-show="showSaveMenu" 
+                    class="absolute z-50 mt-1 bg-white rounded-md shadow-lg border border-gray-200 py-1 w-40"
+                    ref="dropdownRef">
+                  <button 
+                    @click="saveAsDraft"
+                    class="w-full text-left px-4 py-2 text-sm hover:bg-gray-100"
+                  >
+                    Save as Draft
+                  </button>
+                  <button 
+                    @click="saveAsUnpublished"
+                    class="w-full text-left px-4 py-2 text-sm hover:bg-gray-100"
+                  >
+                    Save as Unpublished
+                  </button>
+                </div>
+              </transition>
+            </div>
+
+          <!-- Publish Now Button -->
+          <button 
+            @click="publishNow"
+            class="inline-flex items-center gap-2 px-3 py-1.5 text-sm bg-green-600 text-white hover:bg-green-700 rounded-md"
+          >
+            <Upload class="w-4 h-4" />
+            {{ mode === "pub" ? "Update Chapter": "Publish Now" }}
+          </button>
+          <button class="inline-flex items-center gap-2 px-3 py-1.5 text-sm hover:bg-gray-100 rounded-md">
+            <Settings class="w-4 h-4"  ></Settings>
+            Settings
+          </button>
+        </div>
+        <div class="flex items-center space-x-2">
+          <button class="px-3 py-1.5 text-sm border border-gray-300 hover:bg-gray-100 rounded-md">Share</button>
+          <button class="px-3 py-1.5 text-sm bg-blue-600 text-white hover:bg-blue-700 rounded-md">{{username}}</button>
+        </div>
+      </nav>
+      <ShortcutModal class="z-[100000]"
+        :groups="groups" 
+        :posX="shortCutModalX" 
+        :posY="shortCutModalY"
+        :visible="shortCutKeyPressed"
+        :search="searchTerm"
+        @result="handleSelect"
+        @close="closeModal"
+        ></ShortcutModal>
+  
+      <div class="flex-1 flex">
+        <!-- Main Writing Area -->
+        <div :class="`flex-1 transition-all duration-300 ${showUtilityPanel ? 'w-2/3' : 'w-full'}`">
+          <div class="h-full flex flex-col">
+            <!-- Chapter Navigation -->
+            <!-- Writing Space max-w-3xl -->
+            <div class="flex-1 p-8 bg-white mx-auto w-full overflow-y-auto" >
+              <div class="max-w-none">
+                <input
+                  v-model="chapterTitle"
+                  type="text"
+                  placeholder="Chapter Title"
+                  class="w-full text-3xl font-bold mb-4 p-2 border-none focus:outline-none focus:ring-2 focus:ring-blue-200 rounded-md"
+                />
+
+                <!-- <client-only > -->
+                     <!-- <ExtendEditor nuxt-client></ExtendEditor> -->
+                <!-- </client-only> -->
+
+                <textarea id="txttinyeditor"></textarea>xz
+                <div id="mask"></div>
+ 
+                <button @click="getEditorHtml" class="responsive-button">Save</button>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Floating Chapter Button -->
+        <button
+          @click="toggleChapterPanel()"
+          class="fixed right-4 bottom-4 z-50 bg-blue-600 text-white rounded-full p-3 shadow-lg hover:bg-blue-700"
+        >
+          <MenuSquare class="w-6 h-6" />
+        </button>
+
+        <!-- Chapter Panel -->
+        <div
+          v-show="showChapterPanel"
+          class="fixed right-4 bottom-20 z-50 w-72 bg-white rounded-lg shadow-xl border"
+        >
+          <div class="p-4">
+            <div class="flex flex-col items-center justify-between mb-4">
+              <div class="panel-btn-container flex flex-row mb-4 gap-4">
+                <button class="panel-btn-class" @click="fetchChapters('pub')">pub</button>
+                <button class="panel-btn-class" @click="fetchChapters('unpub')">unpub</button>
+                <button class="panel-btn-class" @click="fetchChapters('draft')">draft</button>
+              </div>
+              <h3 class="font-semibold">Chapters</h3>
+              <div class="relative">
+                <input
+                  v-model="searchQuery"
+                  type="text"
+                  placeholder="Search..."
+                  class="pl-8 pr-2 py-1 text-sm border rounded-md w-40"
+                />
+                <Search class="w-4 h-4 text-gray-400 absolute left-2 top-1.5" />
+              </div>
+            </div>
+            
+            <div class="max-h-96 overflow-y-auto">
+              <div 
+                v-for="chapter in filteredChapters" 
+                :key="chapter.id"
+                :class="[
+                  'p-2 rounded-md cursor-pointer hover:bg-gray-100',
+                  currentChapter === chapter.id ? 'bg-blue-50 text-blue-600' : ''
+                ]"
+                @click="selectChapter(chapter.id)"
+              >
+                {{ chapter.title }}
+              </div>
+              <div 
+                class="p-2 rounded-md cursor-pointer hover:bg-gray-100 text-blue-600"
+                @click="createNewChapter"
+              >
+                + New Chapter
+              </div>
+            </div>
+          </div>
+        </div>
+  
+        <!-- Utility Sidebar Toggle -->
+        <button
+          @click="toggleUtilityPanel"
+          class="bg-gray-100 hover:bg-gray-200 px-1 flex items-center"
+        >
+          {{ showUtilityPanel ? '→' : '←' }}
+        </button>
+  
+        <!-- Utility Sidebar -->
+        <div v-show="showUtilityPanel" class="w-1/3 bg-white border-l">
+          <div class="flex border-b">
+            <button
+              v-for="tab in tabs"
+              :key="tab.value"
+              :class="[
+                'flex items-center px-4 py-2 hover:bg-gray-50',
+                activeTab === tab.value ? 'border-b-2 border-blue-600 text-blue-600' : 'text-gray-600'
+              ]"
+              @click="activeTab = tab.value"
+            >
+              <component :is="tab.icon" class="w-4 h-4 mr-2" > </component>
+              {{ tab.label }}
+            </button>
+          </div>
+  
+          <!-- Entities Tab -->
+          <div v-show="activeTab === 'entities'" class="p-4">
+            <!-- <div class="bg-white rounded-lg shadow">
+              <div class="p-4">
+                <h3 class="font-semibold mb-2">Entities in Scene</h3>
+                <div class="space-y-2">
+                  <div v-for="character in entities" :key="character.id" 
+                       class="flex items-center justify-between p-2 bg-gray-50 rounded-md">
+                    <span>{{ character.name }}</span>
+                    <button 
+                      class="px-3 py-1.5 text-sm hover:bg-gray-100 rounded-md"
+                      @click="viewCharacterDetails(character)"
+                    >
+                      View Details
+                    </button>
+                  </div>
+                </div>
+              </div>
+            </div> -->
+            <KeepAlive>
+            <EntityPanel :groups="groups" :shortCutKeyPressed="shortCutKeyPressed" :shortCutKey="shortCutKey" 
+            @result="handleShortCutResult"
+            @update-group="handleGroupUpdate"
+            ></EntityPanel>
+            </KeepAlive>
+            <!-- <div>
+              <button>Add Character</button>
+            </div> -->
+          </div>
+  
+          <!-- Plot Tab -->
+          <div v-show="activeTab === 'plot'" class="p-4">
+            <div class="bg-white rounded-lg shadow">
+              <div class="p-4">
+                <h3 class="font-semibold mb-2">Plot Structure</h3>
+                <div class="bg-blue-50 text-blue-700 rounded-md p-4">
+                  <span>Current chapter: {{ plotStructure.currentPhase }}</span>
+                </div>
+              </div>
+            </div>
+          </div>
+  
+          <!-- Analysis Tab -->
+          <div v-if="activeTab === 'analysis'" class="p-4">
+            <div class="bg-white rounded-lg shadow">
+              <div class="p-4 space-y-4">
+                <div class="flex items-center gap-2" :class="analysisResults.grammar ? 'text-green-600' : 'text-red-600'">
+                  <Check :name="analysisResults.grammar ? 'lucide:check' : 'lucide:x'" class="w-4 h-4" />
+                  Grammar check {{ analysisResults.grammar ? 'passed' : 'failed' }}
+                </div>
+                <div class="flex items-center gap-2" :class="analysisResults.plothole ? 'text-yellow-600' : 'text-green-600'">
+                  <TriangleAlert :name="analysisResults.plothole ? 'lucide:alert-triangle' : 'lucide:check'" class="w-4 h-4" />
+                  {{ analysisResults.plothole ? 'Potential plothole detected' : 'No plotholes detected' }}
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <!-- </client-only> -->
+  </template>
+  
+  <script setup>
+
+  // import ExtendEditor from '~/components/ExtendEditor.vue';
+
+  // import {UmoEditor} from '@umoteam/editor';
+  // import '@wangeditor/editor/dist/css/style.css' // import css
+
+  // import { i18nChangeLanguage, createEditor, createToolbar } from '@wangeditor/editor'
+  // import { isLoggedIn, getUsername, getHeaders } from '~/utils/utils';
+  import { ref, reactive, onMounted , defineProps, watch, defineEmits } from 'vue'
+  import { useRoute } from 'vue-router';
+  import {Settings, Save, ArrowBigLeft, GitBranchIcon } from 'lucide-vue-next'
+  import { TriangleAlert, MenuSquare } from 'lucide-vue-next';
+  import { Upload, Search, Check, Users } from 'lucide-vue-next';
+
+  import { useEditorShortcuts } from '~/composables/useEditorShortcuts'
+
+
+  const props = defineProps({
+        content:{
+          type: String,
+          default: "",
+        },
+        title:{
+          type: String,
+          required: true
+        },
+        novel_id:{
+          type: Number,
+          required: true
+
+        },
+        id:{
+          type: Number
+        },
+        mode:{
+          type: String,
+          default: "draft",
+        },
+        isNew: {
+          type: Boolean,
+          default: true,
+        },
+    })
+
+  const shortCutKey = ref("")
+
+
+  const loading = ref(true)
+  const activeEditor = ref(null)
+
+  const removeStyles = async (htmlString) => {
+  // Parse HTML string
+  const parser = new DOMParser();
+  const doc = parser.parseFromString(htmlString, "text/html");
+
+  // Get the body element
+  const bodyElement = doc.body;
+
+  // Extract the background color directly
+  const bgColor = bodyElement.style.backgroundColor || "#ffffff";
+  localStorage.setItem("editorBgColor", bgColor); // Save to localStorage
+
+  // Function to clean styles
+  function cleanStyles(element) {
+    if (element.hasAttribute("style")) {
+      let style = element.getAttribute("style");
+
+      // Remove unwanted styles (but NOT background color)
+      style = style.replace(
+        /\b(margin|padding|width|height|min-width|min-height|max-width|max-height|margin-left|margin-right|margin-top|margin-bottom|padding-left|padding-right|padding-top|padding-bottom|position)\s*:\s*[^;]+;?/gi,
+        ""
+      ).trim();
+
+      // Update the style attribute
+      if (style === "") {
+        element.removeAttribute("style");
+      } else {
+        element.setAttribute("style", style);
+      }
+    }
+  }
+
+  // Clean styles for the body
+  cleanStyles(bodyElement);
+
+  // Return cleaned HTML
+  return bodyElement.outerHTML;
+};
+
+    useHead({
+  title: "Editing Chapters",
+  script:[ 
+      {
+        src: 'https://cdnjs.cloudflare.com/ajax/libs/tinymce/5.10.9/tinymce.min.js',
+        defer: true,
+        async: true,
+        onload: () => {
+          tinymce.init({
+          selector: '#txttinyeditor',
+          plugins: "advlist anchor autolink autosave charmap code codesample directionality emoticons fullpage fullscreen help image imagetools insertdatetime link lists media nonbreaking noneditable pagebreak paste preview print quickbars save searchreplace spellchecker tabfocus table template textpattern toc visualblocks visualchars wordcount",
+          toolbar: 'undo redo | formatselect fontselect fontsizeselect | bold italic underline | forecolor backcolor customformatpainter | formats |  link image media | alignleft aligncenter alignright alignjustify | lineheight checklist bullist numlist | preview fullscreen | indent outdent | floatleft floatright',
+          toolbar_mode: 'floating',
+          toolbar_sticky: true,
+          quickbars_insert_toolbar: 'quicktable align image media codesample',
+          quickbars_selection_toolbar: 'bold italic underline | align fontsizeselect | bullist numlist | blockquote quicklink',
+          contextmenu: 'undo redo | inserttable | cell row column deletetable | help',
+          // icons: 'thin',
+          menubar: true,
+          image_advtab: true,
+          fontsize_formats: "8pt 10pt 11pt 12pt 14pt 16pt 18pt 20pt 22pt 24pt 36pt",
+          branding: false,
+          height: '700px',
+          content_css: "document",
+          remove_script_host: false,
+          relative_urls: false,
+          setup: async function (editor) {
+
+                editor.on('BeforeSetContent', function (e) {
+                  if (e.content.indexOf('<br />') !== -1 || e.content.indexOf('<p>&nbsp;</p>') !== -1) {
+                    e.content = e.content.replace('/<br \/>|<p>&nbsp;</p>/g','<br /><span style="position:relative;">&#8203;</span>')
+                  }
+                });
+
+                editor.on('SetContent', function (e) {
+                    const firstLine = editor.getBody().firstChild;
+                    if(firstLine && firstLine.textContent === ""){
+                        firstLine.innerHTML = '<span style="position:relative;">&#8203;</span>';
+                    }
+                })
+                let selectedColor = '#ffffff';
+                editor.on('init', async function () {
+                  const cleanedHtml = await removeStyles(props.content)
+
+                  editor.setContent(cleanedHtml)
+
+                  const savedBgColor = localStorage.getItem("editorBgColor") || "#ffffff"; 
+
+                  editor.getBody().style.backgroundColor = savedBgColor;
+                  document.getElementsByClassName("paint-icon-rect")[0].setAttribute("fill",savedBgColor)
+                  activeEditor.value = editor;
+                });
+                editor.on('keydown', (e) =>{
+                  handleKeyPress(e)
+                });
+                editor.ui.registry.addIcon("paint-icon",
+                  `<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-paint-roller"><rect class="paint-icon-rect" fill="${selectedColor}" width="16" height="6" x="2" y="2" rx="2"/><path d="M10 16v-2a2 2 0 0 1 2-2h8a2 2 0 0 0 2-2V7a2 2 0 0 0-2-2h-2"/><rect width="4" height="6" x="8" y="16" rx="1"/></svg>`
+                ),
+
+                  // Add custom format painter button
+                editor.ui.registry.addButton('customformatpainter', {
+                  // icon: 'format-painter',
+                  icon: "paint-icon",
+                  onAction: function () {
+                    const body = editor.getBody();
+                    const currentColor = body.style.backgroundColor || '#ffffff';
+
+                    // api.setData({ color: currentColor });
+  
+          
+                    editor.windowManager.open({
+                      title: 'Background Color',
+                      body: {
+                        type: 'panel',
+                        items: [{
+                          type: 'colorinput',
+                          name: 'color',
+                          label: 'Color',
+                          value: currentColor,
+                        }],
+                      },
+                      initialData: { color: currentColor },
+                      buttons: [
+                        { type: 'cancel', text: 'Cancel' },
+                        { type: 'submit', text: 'Apply', primary: true }
+                      ],
+                      onSubmit:async (api) => {
+                        const color = api.getData().color;
+                        selectedColor = color;
+
+                        localStorage.setItem("editorBgColor",color)
+                        
+                        // Apply to body tag
+                        editor.dom.setStyles(editor.getBody(), {
+                          'background-color': color
+                        });
+                        editor.getBody().setAttribute("style",`background-color:${color}`)
+
+                        document.getElementsByClassName("paint-icon-rect")[0].setAttribute("fill",color)
+
+                        editor.setContent(getEditorContentWithBg(editor))
+                        api.close();
+                      }
+                    });
+                  }
+                });
+          },
+        })
+      
+    }
+  ]
+})
+
+  definePageMeta({
+    components: {
+      // ExtendEditor
+      // : () => import('~/componentsLazy/ExtendEditor.vue')
+    }
+  })
+
+
+  // <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-paint-roller"><rect fill=#B96AD9 width="16" height="6" x="2" y="2" rx="2"/><path d="M10 16v-2a2 2 0 0 1 2-2h8a2 2 0 0 0 2-2V7a2 2 0 0 0-2-2h-2"/><rect width="4" height="6" x="8" y="16" rx="1"/></svg>
+
+
+  const {$store} = useNuxtApp()
+  const headers = ref({})
+
+  const isMounted = ref(false);
+  const ueditor = ref();
+  var editor;
+  const emit = defineEmits(['save']);
+
+  const route = useRoute();
+  const novel_id = parseInt(route.params.novel_id);
+
+  //user state
+  const dbName = 'client-db';
+  const storeName = 'account-settings';
+  const username = ref("anon"); // Make username reactive
+  const userLoggedIn = ref(false);
+  
+  // State
+  const showUtilityPanel = ref(false)
+  const activeTab = ref('entities')
+  const chapterTitle = ref('')
+  const chapterContent = ref('')
+  const currentChapter = ref(1)
+  const quillEditor = ref(null)
+   // Generate title with random number based on current timestamp
+
+  // Add new state for save menu
+  const showSaveMenu = ref(false)
+  const saveButtonRef = ref(null)
+  const dropdownRef = ref(null)
+
+  
+
+  const groups = await $store.getGroups()
+  const {
+  searchTerm,
+  shortCutKeyPressed,
+  shortCutModalX,
+  shortCutModalY,
+  currentEditorCursor,
+  createEditorHandler,
+  handleGroupSelect,
+  closeModal
+} = useEditorShortcuts(groups)
+
+const toggleSaveMenu = () => {
+  showSaveMenu.value = !showSaveMenu.value
+}
+
+const toggleChapterPanel = async ()=>{
+  showChapterPanel.value = !showChapterPanel.value
+  showChapterPanel.value?await fetchChapters("pub"):[]
+  return
+} 
+
+// Handle clicks outside the dropdown
+const handleClickOutside = (event) => {
+  if (
+    saveButtonRef.value && 
+    dropdownRef.value && 
+    !saveButtonRef.value.contains(event.target) && 
+    !dropdownRef.value.contains(event.target)
+  ) {
+    showSaveMenu.value = false
+  }
+}
+
+const destroy_editor = () => {
+    // Destroy editor instance if necessary
+    if (editor) {
+    activeEditor.value.destroy()
+  }
+}
+
+function getEditorContentWithBg(editor) {
+  const content = editor.getContent(); // Get TinyMCE content
+  const bgColor = localStorage.getItem("editorBgColor") || "#ffffff"; // Retrieve saved background color
+
+  // Parse content using DOMParser
+  const parser = new DOMParser();
+  const doc = parser.parseFromString(content, "text/html");
+
+  // Apply background color directly to <body>
+  if (doc.body) {
+    doc.body.style.backgroundColor = bgColor;
+  }
+
+  // Return modified HTML as a string
+  return doc.documentElement.outerHTML;
+}
+
+// Add new methods
+
+const saveAsDraft = async () => {
+  const content = getEditorContentWithBg(activeEditor.value);
+  var resp = null;
+
+  if(props.isNew){
+    resp = await saveModeNew("draft",content);
+  }else if(!props.isNew && props.mode !== "draft"){
+    resp = await migrateMode("draft",props.mode,content)
+  }else{
+    resp = await updateDetails("draft",content)
+  }
+
+  
+  if(resp.statusCode === 200){
+    alert("content saved as draft successfully")
+    clear_editor()
+  }else{
+    alert(resp.message)
+  }
+  showSaveMenu.value = false
+}
+const clear_editor = () => {
+  activeEditor.value.setContent("");
+  chapterTitle.value = "";
+  return
+}
+
+const saveAsUnpublished = async () => {
+  const content = getEditorContentWithBg(activeEditor.value)
+  var resp;
+  if(props.isNew){
+    resp = await saveModeNew("unpub",content);
+  }else if(!props.isNew && props.mode !== "unpub"){
+    resp = await migrateMode("unpub", props.mode,content)
+  }else{
+    resp = await updateDetails("unpub",content)
+  }
+
+  if(resp.statusCode === 200){
+    alert("content saved as unpublished chapter successfully")
+    clear_editor()
+  }else{
+    alert(resp.message)
+  }
+  showSaveMenu.value = false
+}
+
+const publishNow = async() => {
+  const content = getEditorContentWithBg(activeEditor.value)
+  var resp;
+  if(props.isNew){
+    resp = await saveModeNew("pub",content)
+    console.log(resp)
+  }else if(!props.isNew && props.mode !== "pub"){
+    resp = await migrateMode("pub", props.mode,content)
+  }else{
+    resp = await updateDetails("pub",content)
+  }
+
+  if(resp.statusCode === 200){
+      alert("Published the chapter successfully")
+      clear_editor()
+    }else{
+      alert(resp.message)
+    }
+}
+
+const migrateMode = async(to,from,content) =>{
+  return await $fetch(`${API}novels/${props.novel_id}/chapters/migrate?to=${to}&from=${from}`,
+      {
+        method: "PUT",
+        headers: headers.value,
+        body: JSON.stringify({
+          id: props.id,
+          title : chapterTitle.value,
+          content: content
+        })
+      }
+  )
+}
+
+const saveModeNew = async(mode,content) => {
+  return await $fetch(`${API}novels/${props.novel_id}/chapters/edit/new?query=${mode}`,
+      {
+        method: "POST",
+        headers: headers.value,
+        body: JSON.stringify({
+          title : chapterTitle.value,
+          content: content
+        })
+      }
+    )
+}
+
+const updateDetails = async(mode,content) => {
+  return await $fetch(`${API}novels/${props.novel_id}/chapters/edit/${props.id}?query=${mode}`,
+    {
+      method: "PUT",
+      headers: headers.value,
+      body: JSON.stringify({
+        title : chapterTitle.value,
+        content: content
+      })
+    }
+  )
+}
+
+// Add click outside handler to close drop
+ 
+  // Sample data
+
+  const chapters = ref([])
+
+  const fetchChapters = async (type) => {
+    const data = await $fetch(`${API}novels/${novel_id}`,{
+      headers: headers.value,
+      params:{
+        limit:5,
+        order:"desc",
+        sort: "chapterNumber",
+        type:type
+      }
+    })
+
+
+    chapters.value = data.body.chapters
+    console.log(chapters.value)
+    return
+
+  }
+
+
+  
+  const entities = reactive([
+    { id: 1, name: 'John Smith' },
+    { id: 2, name: 'Sarah Johnson' }
+  ])
+  
+  const tabs = reactive([
+    { value: 'entities', label: 'Entities', icon: Users },
+    { value: 'plot', label: 'Plot', icon: GitBranchIcon },
+    { value: 'analysis', label: 'Analysis', icon: TriangleAlert }
+  ])
+  
+  const plotStructure = reactive({
+    currentPhase: 'Rising Action'
+  })
+  
+  const analysisResults = reactive({
+    grammar: true,
+    plothole: false
+  })
+
+
+  onMounted(async () => {
+            username.value = await $store.getUsername();
+            userLoggedIn.value = await $store.isLoggedIn();
+            headers.value = await $store.getNormalHeaders();
+
+            // await load_editor();
+            // console.log(props)
+            chapterTitle.value = props.title
+            // const data = await $fetch(`${API}novels/${route.params.novel_id}/chapters/edit/new`)
+
+            document.addEventListener('click', handleClickOutside)
+            groups.value = await $store.getGroups()
+
+            await nextTick()
+
+        await nextTick();
+            
+
+            loading.value = false;
+            console.log(activeEditor)
+            if (activeEditor.value) {
+              const handler = createEditorHandler(activeEditor.value)
+              activeEditor.value.on('keydown', handler)
+              console.log(true)
+            }
+  });
+  onBeforeMount(async ()=>{
+    await destroy_editor();
+    document.removeEventListener('click', handleClickOutside)
+  })
+    
+  // watch(() => props.content, (newContent) => {
+	// 	if(activeEditor.value.value){
+	// 		activeEditor.value.value.setContent(newContent)
+	// 	}
+  // });
+  
+  // Methods
+  function appendStyleToHTML(htmlString) {
+    // Check if there is a <head> tag in the HTML string
+    if (htmlString.includes('<head>')) {
+        // Insert the <style> tag after the opening <head> tag
+        return htmlString.replace('<head>', `<head><link rel="stylesheet" href="~/assets/css/quill.snow.css">`);
+    } else {
+        // If no <head> tag, append the <style> tag at the beginning of the body or the HTML string
+        return `<link rel="stylesheet" href="~/assets/css/quill.snow.css">${htmlString}`;
+    }
+  }
+
+
+  const getEditorHtml = () => {
+    if (quillEditor.value) {
+        const quill = quillEditor.value.getQuill()
+        const htmlContent = quillEditor.value.getContent(); // Get HTML content
+        console.log(htmlContent)
+        const inlinedHtml = appendStyleToHTML(htmlContent); // Apply styles
+        const blob = new Blob([htmlContent], { type: 'text/html' }); // Create a Blob
+        const url = URL.createObjectURL(blob); // Create a URL for the Blob
+
+        // // Create an <a> element to trigger download
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = 'editor-content.html'; // File name
+        document.body.appendChild(a); // Append to body
+        a.click(); // Trigger click
+        document.body.removeChild(a); // Remove from body
+        URL.revokeObjectURL(url); // Revoke the object URL
+      }
+  }
+  const toggleUtilityPanel = () => {
+    showUtilityPanel.value = !showUtilityPanel.value
+  }
+  
+  const analyzeContent = () => {
+    // Implement content analysis logic here
+    console.log('Analyzing content...')
+  }
+  
+  const previousChapter = () => {
+    if (currentChapter.value > 1) {
+      currentChapter.value--
+    }
+  }
+  
+  const nextChapter = () => {
+    if (currentChapter.value < chapters.value.length) {
+      currentChapter.value++
+    }
+  }
+  
+  const viewCharacterDetails = (character) => {
+    console.log('Viewing character:', character.name)
+  }
+
+
+  // Add new reactive variables for chapter panel
+const showChapterPanel = ref(false)
+const searchQuery = ref('')
+
+// Computed property for filtered chapters
+const filteredChapters = computed(() => {
+  if (!searchQuery.value) return chapters.value
+  const query = searchQuery.value.toLowerCase()
+  return chapters.value.filter(chapter => 
+    chapter.title.toLowerCase().includes(query)
+  )
+})
+
+// Modified chapter selection method
+const selectChapter = (chapterId) => {
+  currentChapter.value = chapterId
+  showChapterPanel.value = false // Close panel after selection
+}
+
+// New chapter creation method
+const createNewChapter = () => {
+  const newChapter = {
+    id: chapters.value.length + 1,
+    title: `Chapter ${chapters.value.length + 1}: Untitled`
+  }
+  chapters.value.push(newChapter)
+  selectChapter(newChapter.id)
+}
+
+const handleShortCutResult = (res) =>{
+  console.log(res)
+}
+
+const handleSelect =(res)=>{
+  shortCutKeyPressed.value = false
+  handleGroupSelect(activeEditor.value,currentEditorCursor.value,res)
+}
+
+const handleGroupUpdate = (newGroup) =>[
+  $store.setGroups(newGroup)
+]
+
+function getCursor() {
+
+    currentEditorCursor.value = activeEditor.value.selection.getBookmark();
+
+    let bookmark = activeEditor.value.selection.getRng().getBoundingClientRect();
+    console.log(bookmark)
+    shortCutModalX.value = bookmark.x;
+    shortCutModalY.value = bookmark.y
+}
+const handleKeyPress = (event) => {
+  // Check if Ctrl is pressed and the physical M key is pressed (case-insensitive)
+  if (event.ctrlKey && event.code === 'KeyM') {
+    // event.preventDefault(); // Prevents browser defa
+    try{
+    getCursor()
+    }catch(e){
+      console.log(e)
+    }
+    console.log(shortCutModalX.value, shortCutModalY.value)
+    shortCutKeyPressed.value = true
+    
+    // Add your logic here
+  }
+};
+// Setup editor when mounted
+
+
+onUnmounted(() => { 
+  if (activeEditor.value) {
+    activeEditor.value.off('keydown')
+  }
+});
+</script>
+  
+<style scoped>
+  .prose {
+    max-width: none;
+  }
+</style>

@@ -1,0 +1,280 @@
+<template>
+  <div class="min-h-screen bg-gray-50 pb-8">
+    <!-- Show a loading spinner while fetching -->
+    <LoadingAnimation v-if="!novel"></LoadingAnimation>
+
+    <!-- Main Content -->
+    <div v-else>
+      <!-- Hero Section with Novel Info -->
+      <div class="bg-white shadow-sm">
+        <div class="max-w-7xl mx-auto px-4 py-6">
+          <div class="flex gap-6">
+            <!-- Cover Image -->
+            <div class="w-48 h-64 flex-shrink-0">
+              <img 
+                :src="novel.coverImage" 
+                :alt="novel.title"
+                class="w-full h-full object-cover rounded-lg shadow-md"
+              />
+            </div>
+
+            <!-- Novel Info -->
+            <div class="flex-1">
+              <h1 class="text-2xl font-bold mb-2">{{ novel.title }}</h1>
+              <h2 class="text-lg text-gray-600 mb-4">{{ novel.originalTitle }}</h2>
+              <h2 class="text-lg text-gray-600 mb-4">{{ novel.author }}</h2>
+              
+              <div class="flex items-center gap-6 mb-4">
+                <div class="flex items-center gap-2">
+                  <Icon name="lucide:book-open" class="w-5 h-5 text-gray-600" />
+                  <span>{{ novel.chapters }} Chapters</span>
+                </div>
+                <div class="flex items-center gap-2">
+                  <Icon name="lucide:eye" class="w-5 h-5 text-gray-600" />
+                  <span>{{ novel.views || 100 }} Views</span>
+                </div>
+                <div class="flex items-center gap-2">
+                  <Icon name="lucide:users" class="w-5 h-5 text-gray-600" />
+                  <span>{{ novel.readers || 100 }} Readers</span>
+                </div>
+              </div>
+
+              <div class="flex items-center gap-2 mb-4">
+                <div class="flex">
+                  <Icon 
+                    v-for="i in 5" 
+                    :key="i"
+                    :name="i <= novel.rating ? 'lucide:star' : 'lucide:star-off'" 
+                    class="w-5 h-5" 
+                    :class="i <= novel.rating ? 'text-yellow-400' : 'text-gray-300'"
+                  />
+                </div>
+                <span class="text-lg font-semibold">{{ novel.reviews || 0.0 }}</span>
+                <span class="text-gray-500">({{ 0 }} reviews)</span>
+              </div>
+
+              <div class="flex gap-3">
+                <button v-if="bookmark" @click="goToChapter(bookmark)" class="px-6 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700">
+                  Continue Reading
+                </button>
+                <button v-else  @click="goToChapter(1)" class="px-6 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700">
+                  Start Reading
+                </button>
+
+                <button v-if="!inLibrary" @click="addToLibrary(novel.id)" class="px-6 py-2 border border-gray-300 rounded-md hover:bg-gray-50">
+                  Add to Library
+                </button>
+                <div v-else  class="px-6 py-2 border border-gray-300 rounded-md hover:bg-gray-50">
+                  In Library
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Navigation Tabs -->
+      <div class="max-w-7xl mx-auto px-4 mt-6">
+        <div class="flex border-b">
+          <button 
+            v-for="tab in tabs" 
+            :key="tab.id"
+            @click="activeTab = tab.id"
+            :class="[
+              'px-6 py-3 font-medium',
+              activeTab === tab.id ? 'border-b-2 border-blue-600 text-blue-600' : 'text-gray-600'
+            ]"
+          >
+            {{ tab.name }}
+          </button>
+        </div>
+
+        <!-- Tab Content -->
+        <div class="mt-6">
+          <!-- About Tab -->
+          <div v-if="activeTab === 'about'" class="grid grid-cols-12 gap-6">
+            <div class="col-span-8">
+              <div class="bg-white rounded-lg shadow p-6">
+                <h2 class="text-xl font-bold mb-4">Novel Summary</h2>
+                <div class="space-y-4">
+                  <div class="flex flex-wrap gap-2 mb-4">
+                    <span 
+                      v-for="tag in novel.tags" 
+                      :key="tag"
+                      class="px-3 py-1 bg-blue-50 text-blue-600 rounded-full text-sm"
+                    >
+                      {{ tag.name }}
+                    </span>
+                  </div>
+                  <p class="text-gray-600 leading-relaxed" v-html="novel.summary"></p>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- TOC Tab -->
+          <!-- Table of Contents Tab -->
+          <div v-if="activeTab === 'chapters'" class="bg-white rounded-lg shadow">
+            <div class="p-4 border-b">
+              <div class="flex justify-between items-center">
+                <h2 class="text-xl font-bold">Chapters</h2>
+                <div class="flex gap-2">
+                  <button @click=latest :disabled="isLatestDisabled" :class="['px-4 py-2 text-sm border rounded-md', isLatestDisabled ? 'bg-gray-300 text-gray-600' : 'bg-blue-600 text-white']" class="hover:bg-gray-50 hover:text-blue-800">
+                    Last
+                  </button>
+                  <button @click=first :disabled="isFirstDisabled" :class="['px-4 py-2 text-sm border rounded-md', isFirstDisabled ? 'bg-gray-300 text-gray-600' : 'bg-blue-600 text-white']" class="hover:bg-gray-50 hover:text-blue-800">
+                    First
+                  </button>
+                </div>
+              </div>
+            </div>
+            <div class="divide-y">
+              <div 
+                v-for="chapter in novel.chapterList" 
+                :key="chapter.chapterNumber"
+                @click="goToChapter(chapter.chapterNumber)"
+                class="p-4 hover:bg-gray-50 flex justify-between items-center cursor-pointer"
+              >
+                <span>Chapter {{ chapter.chapterNumber }}: {{ chapter.title }}</span>
+                <span class="text-gray-500 text-sm">{{ chapter.uploadedAt }}</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- Reviews Tab -->
+          <div v-if="activeTab === 'reviews'" class="bg-white rounded-lg shadow p-6">
+            <div class="flex justify-between items-center mb-6">
+              <h2 class="text-xl font-bold">Reviews</h2>
+              <button class="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700">
+                Write Review
+              </button>
+            </div>
+            <div class="space-y-6">
+              <div v-for="review in novel.reviews" :key="review.id" class="border-b pb-6">
+                <div class="flex justify-between items-start mb-2">
+                  <div class="flex items-center gap-2">
+                    <img 
+                      :src="review.userAvatar" 
+                      :alt="review.userName"
+                      class="w-10 h-10 rounded-full"
+                    />
+                    <div>
+                      <div class="font-medium">{{ review.userName }}</div>
+                      <div class="text-sm text-gray-500">{{ review.date }}</div>
+                    </div>
+                  </div>
+                  <div class="flex">
+                    <Icon 
+                      v-for="i in 5" 
+                      :key="i"
+                      :name="i <= review.rating ? 'lucide:star' : 'lucide:star-off'" 
+                      class="w-4 h-4" 
+                      :class="i <= review.rating ? 'text-yellow-400' : 'text-gray-300'"
+                    />
+                  </div>
+                </div>
+                <p class="text-gray-600">{{ review.content }}</p>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</template>
+
+<script>
+import { ref, onMounted } from 'vue';
+import { useRoute } from 'vue-router';
+import { getHeaders, getUserId } from '~/utils/utils'
+
+export default {
+  setup() {
+    const params = useRoute().params;
+    const router = useRouter();
+    const { $store } = useNuxtApp();
+    const isLatestDisabled = ref(false);
+    const isFirstDisabled = ref(true);
+    const inLibrary = ref(false)
+    const bookmark = ref(null)
+    const activeTab = ref('about');
+    const tabs = [
+      { id: 'about', name: 'About' },
+      { id: 'chapters', name: 'Table of Contents' },
+      { id: 'reviews', name: 'Reviews' },
+    ];
+
+    const novel = ref(null);
+
+    const fetchNovel = async () => {
+      const response = await $fetch(`${API}novel?id=${params.id}`);
+      console.log(response.status);
+      novel.value = response.body.novel;
+    };
+
+    onMounted(async() => {
+      const headers = await $store.getNormalHeaders()
+      const data = await $fetch(`${API}novel?id=${params.id}`,{
+        headers: headers
+      });
+      novel.value = data.body.novel;
+      inLibrary.value = data.body.inLibrary;
+      bookmark.value = data.body.bookmark;
+      const bookmark_num = await $store.getBookmark(novel.value.id);
+      const cached_num_of_chapters = await $store.getNumberOfChapters(novel.value.id);
+      console.log(cached_num_of_chapters)
+      console.log(novel.value.chapters)
+      if(!bookmark.value){
+        bookmark.value = parseInt(bookmark_num);
+        // $store.setBookmark(novel.value.id,1);
+      }
+      if(cached_num_of_chapters !== novel.value.chapters){
+        $store.setNumberOfChapters(novel.value.id, novel.value.chapters);
+        $store.setChapters(novel.value.id, novel.value.chapterList);
+      }
+    });
+
+    const latest = () => {
+      novel.value.chapterList.reverse();
+      isLatestDisabled.value = true;
+      isFirstDisabled.value = false;
+    };
+
+    const first = () => {
+      novel.value.chapterList.reverse();
+      isLatestDisabled.value = false;
+      isFirstDisabled.value = true;
+    };
+
+    function goToChapter(chapter_num) {
+      router.push(`/novel/${params.id}/chapter/${chapter_num}`);
+    }
+    async function addToLibrary(novel_id){
+      const headers = await getNormalHeaders()
+      const userId = await getUserId()
+      const data = await $fetch("${API}user/"+userId+"/library",{
+        method : "PUT",
+        headers: headers,
+        body: JSON.stringify({novel_id: novel_id})
+      })
+      console.log(data.body)
+      inLibrary.value = data.body.inLibrary
+      bookmark.value = data.body.bookmark
+    }
+
+    return {
+      novel,
+      tabs,
+      activeTab,
+      isLatestDisabled,
+      isFirstDisabled,
+      latest,
+      first,
+      goToChapter,
+      addToLibrary,
+      inLibrary,
+      bookmark
+    };
+  },
+};
+</script>

@@ -1,0 +1,722 @@
+<template>
+  <div class="min-h-screen pb-8" @scroll="handleScroll" @touchstart="handleTouchStart" @touchend="handleTouchEnd">
+    <LoadingAnimation v-if="loading" />
+    <div v-else>
+        <div :class="[
+            'top-0 bg-[--background-color] shadow-sm z-10 exclude-toggle',
+            { 'hidden-header': !isHeaderVisible },
+          ]">
+          <div class="max-w-6xl mx-auto px-4 py-4">
+            <div class="flex justify-between items-center">
+              <div class="flex gap-4">
+                <button @click="backToNovel"
+                  class="px-4 py-2 flex items-center gap-2 border rounded-md hover:bg-gray-50">
+                  <Book class="w-4 h-4" />
+                  <span class="font-medium text-sm">Back</span>
+                </button>
+                <button class="px-4 py-2 flex items-center gap-2 border rounded-md hover:bg-gray-50"
+                  @click="navigateChapter(-1)" :disabled="!hasPreviousChapter"
+                  :class="{ 'opacity-50 cursor-not-allowed': !hasPreviousChapter }">
+                  <ChevronLeft name="lucide:chevron-left" class="w-4 h-4" />
+                  Previous
+                </button>
+              </div>
+
+              <div class="flex items-center gap-4">
+                <button class="px-4 py-2 flex items-center gap-2 border rounded-md hover:bg-gray-50"
+                  @click="navigateChapter(1)" :disabled="!hasNextChapter"
+                  :class="{ 'opacity-50 cursor-not-allowed': !hasNextChapter }">
+                  Next
+                  <ChevronRight name="lucide:chevron-right" class="w-4 h-4" />
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="max-w-4xl mx-auto mt-8 relative" ref="contentRef">
+          <div v-if="chapter" ref="chapterBody" id="chapter-body" class="rounded-lg shadow p-4" @mouseup="handleSelection"
+            @touchend="handleSelection" @click="handleHighlightClick">
+            <h1 class="text-2xl font-bold mb-6">
+              Chapter {{ chapter.chapterNumber }}: {{ chapter.title }}
+            </h1>
+            <!-- Use v-dompurify-html here -->
+            <div v-dompurify-html="processedContent" ref="contentDiv"></div>
+            <button @click="clearAllHighlights" class="mt-4 px-4 py-2 bg-red-500 text-white rounded hover:bg-red-600">
+              Clear All Highlights
+            </button>
+
+            <!-- Highlight Button -->
+            <div v-if="highlightButton.show" :style="{
+                position: 'absolute',
+                top: `${highlightButton.position.top}px`,
+                left: `${highlightButton.position.left}px`,
+                transform: 'translateX(-50%)',
+                zIndex: 100000
+              }" class="highlight-controls bg-white rounded-lg shadow-lg p-2">
+              <div v-if="!highlightButton.isRemove" class="flex flex-col gap-2">
+                <button @click="toggleColorPicker" class="px-3 py-1 rounded text-sm font-medium hover:bg-gray-100">
+                  Highlight
+                </button>
+                <div v-if="highlightButton.showColorPicker" class="flex gap-2 p-2 bg-white rounded-lg shadow-lg">
+                  <!-- Corrected: Use v-for for dynamic elements -->
+                  <button v-for="([name, color], index) in Object.entries(HIGHLIGHT_COLORS)" :key="index"
+                    @click="selectHighlightColor(name as HighlightColor)" class="w-6 h-6 rounded-full border border-gray-200"
+                    :style="{ backgroundColor: color }" />
+                </div>
+              </div>
+              <button v-else @click="clickedHighlightSpan && removeHighlightWrapper(clickedHighlightSpan)"
+                class="px-3 py-1 bg-red-500 text-white rounded text-sm font-medium hover:bg-red-600">
+                Remove
+              </button>
+            </div>
+          </div>
+
+          <!-- ... (Navigation buttons, FloatingSettings, Comments - unchanged) ... -->
+          <div class="flex justify-between mt-8">
+            <button class="px-4 py-2 flex items-center gap-2 border rounded-md hover:bg-gray-50"
+              @click="navigateChapter(-1)" :disabled="!hasPreviousChapter"
+              :class="{ 'opacity-50 cursor-not-allowed': !hasPreviousChapter }">
+              <ChevronLeft class="w-4 h-4" />
+              Previous Chapter
+            </button>
+            <button class="px-4 py-2 flex items-center gap-2 border rounded-md hover:bg-gray-50"
+              @click="navigateChapter(1)" :disabled="!hasNextChapter"
+              :class="{ 'opacity-50 cursor-not-allowed': !hasNextChapter }">
+              Next Chapter
+              <ChevronRight class="w-4 h-4" />
+            </button>
+          </div>
+
+          <FloatingSettings :fontsize="parseInt(settings.fontSize)" :brightness="parseInt(settings.brightness)"
+            :backgroundColor="settings.backgroundColor" :bookmark="Boolean(settings.isBookmarked)"
+            :isMobile="Boolean(isMobile)" :isButtonVisible="Boolean(settings.isButtonVisible)"
+            :gestureEnabled="Boolean(settings.gestureEnabled)" :fontColor="settings.fontColor"
+            @fontsizeChanged="handleFontSizeChange" @brightnessChanged="handleBrightnessChange"
+            @backgroundChanged="handleBackgroundChange" @fontColorChanged="handleFontColorChange" @bookmark="handleBookmark"
+            @summarize="handleSummarize" @gesture="handleGesture">
+          </FloatingSettings>
+
+
+          <div v-if="isMobile && showButtons" class="mobile-buttons-container">
+            <button class="mobile-button left" @click="navigateChapter(-1)" :disabled="!hasPreviousChapter"
+              :class="{ 'opacity-50 cursor-not-allowed': !hasPreviousChapter }">
+              <ChevronLeft class="w-6 h-6" />
+            </button>
+            <button class="mobile-button right" @click="navigateChapter(1)" :disabled="!hasNextChapter"
+              :class="{ 'opacity-50 cursor-not-allowed': !hasNextChapter }">
+              <ChevronRight class="w-6 h-6" />
+            </button>
+          </div>
+        </div>
+    </div>
+  </div>
+</template>
+
+<script setup lang="ts">
+import { ref, reactive, onMounted, onBeforeUnmount, watch, nextTick, computed } from 'vue';
+import { useRoute, useRouter } from 'vue-router';
+import { Book, ChevronLeft, ChevronRight } from 'lucide-vue-next';
+
+// Import vue-dompurify-html
+
+// Add highlight color options
+const HIGHLIGHT_COLORS = {
+  yellow: '#ffeb3b',
+  green: '#a5d6a7',
+  blue: '#90caf9',
+  pink: '#f48fb1',
+  purple: '#ce93d8'
+} as const;
+
+type HighlightColor = keyof typeof HIGHLIGHT_COLORS;
+
+// Highlight button state
+interface HighlightButtonState {
+  show: boolean;
+  position: {
+    top: number;
+    left: number;
+  };
+  isRemove: boolean;
+  showColorPicker: boolean;
+  selectedColor: HighlightColor;
+}
+
+const highlightButton = reactive<HighlightButtonState>({
+  show: false,
+  position: {
+    top: 0,
+    left: 0
+  },
+  isRemove: false,
+  showColorPicker: false,
+  selectedColor: 'yellow'
+});
+
+const { $store } = useNuxtApp();
+
+const isHeaderVisible = ref(true);
+const isMobile = ref(window.innerWidth < 768);
+const showButtons = ref(false);
+const timerId = ref(null);
+const initialTouchX = ref(0);
+const initialTouchY = ref(0);
+
+const route = useRoute();
+const router = useRouter();
+
+const chapter = ref({
+  chapterNumber: 0,
+  title: '',
+  content: '',
+  comments: [],
+});
+
+const comments = ref([]);
+const contentRef = ref(null);
+// No more iframe ref
+const chapterBody = ref(null);
+const contentDiv = ref(null); // Ref for the content div
+const loading = ref(true);
+// No more iframeLoading
+
+// Global settings object. Initialized with defaults.
+const settings = reactive(await $store.getReaderSettings());
+
+// Computed property for processed content
+const processedContent = computed(() => {
+  if (!chapter.value || !chapter.value.content) {
+    return '';
+  }
+  return processContent(chapter.value.content);
+});
+
+
+watch(
+  settings,
+  async (newVal) => {
+    // Persist to IndexedDB
+    console.log(settings, newVal)
+    await $store.setReaderSettings(newVal); // Simplified
+    applyTheme();
+    applyStylesToElements();
+  },
+  { deep: true }
+);
+
+const hasPreviousChapter = computed(() => chapter.value?.chapterNumber > 1);
+const totalChapters = ref(null);
+const hasNextChapter = computed(() => {
+  return totalChapters.value !== null && chapter.value?.chapterNumber < totalChapters.value;
+});
+
+const handleTouchStart = (event) => {
+  initialTouchX.value = event.changedTouches[0].clientX;
+  initialTouchY.value = event.changedTouches[0].clientY;
+};
+
+const handleTouchEnd = (event) => {
+  const finalX = event.changedTouches[0].clientX;
+  const finalY = event.changedTouches[0].clientY;
+  const diffX = finalX - initialTouchX.value;
+  const diffY = finalY - initialTouchY.value;
+  if (Math.abs(diffX) > Math.abs(diffY) && Math.abs(diffX) > 50 && settings.gestureEnabled) {
+    if (diffX > 0 && hasPreviousChapter.value) {
+      navigateChapter(-1);
+    } else if (diffX < 0 && hasNextChapter.value) {
+      navigateChapter(1);
+    }
+  }
+};
+
+const navigateChapter = (direction) => {
+  const newChapterNum = parseInt(route.params.chapter_num) + direction;
+  router.push(`/novel/${route.params.novel_id}/chapter/${newChapterNum}`);
+};
+
+const backToNovel = () => {
+  router.push(`/novel/${route.params.novel_id}`);
+};
+
+const fetchChapter = async () => {
+  try {
+    const response = await $fetch(
+      `/api/novels/${route.params.novel_id}/chapters/by_chapter_num/${route.params.chapter_num}`
+    );
+    chapter.value = response.body;
+  } catch (error) {
+    console.error('Error fetching chapter:', error);
+    chapter.value = {
+      chapterNumber: 0,
+      title: 'Error Loading Chapter',
+      content: '<p>Unable to load chapter content. Please try again later.</p>',
+      comments: [],
+    };
+  }
+};
+
+const fetchTotalChapters = async () => {
+  try {
+    const cachedTotal = await $store.getNumberOfChapters(route.params.novel_id);
+    totalChapters.value = cachedTotal;
+
+    if (!cachedTotal) {
+      const data = await $fetch(`/api/novels/${route.params.novel_id}/total`);
+      totalChapters.value = data.chapters;
+      await $store.setNumberOfChapters(route.params.novel_id, data.chapters);
+    } else if (Math.random() < 0.3) {
+      const data = await $fetch(`/api/novels/${route.params.novel_id}/total`);
+      if (data.chapters !== totalChapters.value) {
+        totalChapters.value = data.chapters;
+        await $store.setNumberOfChapters(route.params.novel_id, data.chapters);
+      }
+    }
+  } catch (error) {
+    console.error('Error fetching total chapters:', error);
+  }
+};
+
+const handleScroll = (event) => {
+  const scrollTop = document.documentElement.scrollTop || window.scrollY;
+  isHeaderVisible.value = scrollTop < 100;
+};
+
+const updateIsMobile = () => {
+  isMobile.value = window.innerWidth < 768;
+};
+
+
+// --- Style and Content Processing (Simplified) ---
+
+// Apply styles directly to elements in the DOM
+const applyStylesToElements = () => {
+  if (!chapterBody.value) return;
+
+  nextTick(() => {
+    const newFontSize = parseInt(settings.fontSize);
+    const elements = chapterBody.value.querySelectorAll(
+      'h1, h2, h3, h4, h5, h6, p, div, span, a, li, ul, ol, label, input, button, .text'
+    );
+    elements.forEach((el) => {
+      el.style.fontSize = `${newFontSize}px`;
+      el.style.color = settings.fontColor; // Apply font color here
+    });
+    restoreHighlights(); // Re-apply highlights after style changes.  VERY IMPORTANT
+  });
+};
+
+
+const processContent = (content) => {
+  return content;
+};
+
+
+const applyTheme = () => {
+  if (chapterBody.value) {
+    chapterBody.value.style.backgroundColor = settings.backgroundColor;
+    chapterBody.value.style.filter = `brightness(${settings.brightness}%)`;
+  }
+};
+
+
+const handleFontSizeChange = (newFontVal) => {
+  settings.fontSize = parseInt(newFontVal);
+  applyStylesToElements();  // Apply styles when font size changes
+};
+
+const handleBackgroundChange = (newBgVal) => {
+  settings.backgroundColor = newBgVal;
+  applyTheme();
+};
+
+const handleBrightnessChange = (newBrightnessVal) => {
+  settings.brightness = newBrightnessVal;
+  applyTheme();
+};
+
+const handleGesture = (newVal) => {
+  settings.gestureEnabled = Boolean(newVal);
+};
+const saveBookmark = (newChapter) => {
+  try {
+    $store.setBookmark(route.params.novel_id, newChapter)
+  } catch (e) {
+    console.error('Error saving bookmark:', e)
+  }
+}
+const handleFontColorChange = (newColor) => {
+  settings.fontColor = newColor;
+  applyStylesToElements(); // Apply styles when font color changes
+};
+
+// --- Highlighting Logic ---
+// State for highlight button
+
+const selectedRange = ref<Range | null>(null);
+const isHighlightRemoveButton = ref(false);
+const clickedHighlightSpan = ref<HTMLSpanElement | null>(null); // Store the clicked highlight span
+
+const getHighlightKey = () => {
+  return `highlight_${route.params.novel_id}_${route.params.chapter_num}`;
+};
+
+const serializeRange = (range: Range) => {
+  if (!chapterBody.value) return null;
+
+  const startContainerPath = getNodePath(range.startContainer, chapterBody.value);
+  const endContainerPath = getNodePath(range.endContainer, chapterBody.value);
+
+  if (!startContainerPath || !endContainerPath) return null;
+
+  return {
+    startPath: startContainerPath,
+    startOffset: range.startOffset,
+    endPath: endContainerPath,
+    endOffset: range.endOffset,
+    text: range.toString(),
+  };
+};
+
+const getNodePath = (node: Node, ancestor: Node): number[] | null => {
+  const path = [];
+  let current = node;
+
+  while (current && current !== ancestor) {
+    let index = 0;
+    let sibling = current.previousSibling;
+    while (sibling) {
+      index++;
+      sibling = sibling.previousSibling;
+    }
+    path.unshift(index);
+    current = current.parentNode!;
+  }
+  if (current !== ancestor) {
+    return null
+  }
+
+  return path;
+};
+
+const getNodeFromPath = (path: number[], ancestor: Node): Node | null => {
+  let current: Node = ancestor;
+  for (const index of path) {
+    if (current.childNodes.length <= index) { // Check for out-of-bounds
+      return null;
+    }
+    current = current.childNodes[index];
+    if (!current) return null;
+  }
+  return current;
+};
+
+const deserializeRange = (serializedRange: any): Range | null => {
+  if (!chapterBody.value) return null;
+
+  const startNode = getNodeFromPath(serializedRange.startPath, chapterBody.value);
+  const endNode = getNodeFromPath(serializedRange.endPath, chapterBody.value);
+
+  if (!startNode || !endNode) return null;
+
+  const range = document.createRange();
+  try {
+    range.setStart(startNode, serializedRange.startOffset);
+    range.setEnd(endNode, serializedRange.endOffset);
+  } catch (e) {
+    console.error("Error setting range", e)
+    return null;
+  }
+
+
+  if (range.toString() !== serializedRange.text) {
+    console.warn("Deserialized range text mismatch.  Highlight may be inaccurate.");
+    return null;
+  }
+
+  return range;
+};
+
+
+
+const addHighlight = async () => {
+  if (!selectedRange.value) return;
+
+  highlightRange(selectedRange.value);
+
+  const serialized = serializeRange(selectedRange.value);
+  if (!serialized) {
+    console.error("Failed to serialize range");
+    return;
+  }
+
+  const novelId = parseInt(route.params.novel_id as string);
+  const chapterNum = parseInt(route.params.chapter_num as string);
+  await $store.addHighlight(novelId, chapterNum, serialized); // Use addHighlight
+
+  highlightButton.show = false;
+  window.getSelection()?.empty();
+};
+
+
+
+// New function to handle clicks within the chapterBody
+const handleHighlightClick = (event: MouseEvent) => {
+  let target = event.target as HTMLElement;
+  while (target && target !== chapterBody.value) {
+    if (target.classList.contains('highlight')) {
+      highlightButton.isRemove = true;
+      highlightButton.show = true;
+      clickedHighlightSpan.value = target as HTMLSpanElement;
+
+      const rect = target.getBoundingClientRect();
+      highlightButton.position = {
+        top: rect.top + window.scrollY - 45,
+        left: rect.left + window.scrollX + (rect.width / 2)
+      };
+      return;
+    }
+    target = target.parentNode as HTMLElement;
+  }
+  highlightButton.show = false;
+};
+const toggleColorPicker = () => {
+  highlightButton.showColorPicker = !highlightButton.showColorPicker;
+};
+
+const selectHighlightColor = (color: HighlightColor) => {
+  highlightButton.selectedColor = color;
+  highlightButton.showColorPicker = false;
+  addHighlight();
+};
+const getSelectionPosition = (event: MouseEvent | TouchEvent): { top: number; left: number } => {
+  const selection = window.getSelection();
+  if (!selection || !selection.rangeCount) return { top: 0, left: 0 };
+
+  const range = selection.getRangeAt(0);
+  const rect = range.getBoundingClientRect();
+
+  // Position the button above the selection
+  return {
+    top: rect.top + window.scrollY - 45, // Position above selection
+    left: rect.left + window.scrollX + (rect.width / 2) // Center horizontally
+  };
+};
+const handleSelection = async (event: MouseEvent | TouchEvent) => {
+  if (event.type === 'mouseup' && (event as MouseEvent).button !== 0) {
+    return;
+  }
+  
+
+  const selection = window.getSelection();
+  if (!selection || !selection.rangeCount) return;
+
+  const range = selection.getRangeAt(0);
+  if (range.collapsed || !chapterBody.value?.contains(range.commonAncestorContainer)) {
+    highlightButton.show = false;
+    return;
+  }
+
+  selectedRange.value = range;
+  highlightButton.isRemove = false;
+  
+  highlightButton.showColorPicker = false;
+  const position = getSelectionPosition(event);
+  // console.log(position)
+  highlightButton.position.top = position.top;
+  highlightButton.position.left = position.left;
+  highlightButton.show = true;
+
+};
+
+
+
+const restoreHighlights = async () => {
+  if (!chapterBody.value) return;
+  const novelId = parseInt(route.params.novel_id as string);
+  const chapterNum = parseInt(route.params.chapter_num as string);
+  const highlights = await $store.getHighlights(novelId, chapterNum); // Use getHighlights
+  highlights.forEach((serializedRange: any) => {
+    const range = deserializeRange(serializedRange);
+    if (range) {
+      highlightRange(range);
+    }
+  });
+};
+
+const highlightRange = (range: Range, color: string = HIGHLIGHT_COLORS[highlightButton.selectedColor]) => {
+  const span = document.createElement('span');
+  span.className = 'highlight';
+  span.style.backgroundColor = color;
+  try {
+    range.surroundContents(span);
+  } catch (e) {
+    console.error("Error highlighting range:", e);
+    return;
+  }
+};
+
+const removeHighlightWrapper = async (span: HTMLSpanElement) => {
+
+  const novelId = parseInt(route.params.novel_id as string);
+  const chapterNum = parseInt(route.params.chapter_num as string);
+  const highlightText = span.textContent || "";
+
+  const parent = span.parentNode!;
+  while (span.firstChild) {
+    parent.insertBefore(span.firstChild, span);
+  }
+  parent.removeChild(span);
+
+  await $store.removeHighlight(novelId, chapterNum, highlightText);
+  parent.normalize();
+  highlightButton.show = false;
+};
+
+const clearAllHighlights = async () => {
+  const novelId = parseInt(route.params.novel_id as string);
+  const chapterNum = parseInt(route.params.chapter_num as string);
+  await $store.clearAllHighlights(novelId, chapterNum); // Use clearAllHighlights
+  const highlightedSpans = chapterBody.value?.querySelectorAll('.highlight');
+
+  highlightedSpans?.forEach(span => {
+    if (span.parentNode) {
+      while (span.firstChild) {
+        span.parentNode.insertBefore(span.firstChild, span);
+      }
+      span.parentNode.removeChild(span);
+    }
+  });
+  if (chapterBody.value) chapterBody.value.normalize() // Restore normal text
+};
+
+onMounted(async () => {
+  await Promise.all([fetchChapter(), fetchTotalChapters()]);
+  saveBookmark(parseInt(route.params.chapter_num))
+  window.addEventListener('scroll', handleScroll);
+  window.addEventListener('resize', updateIsMobile);
+  loading.value = false;
+
+  nextTick(async () => {
+    // Load initial settings from IndexedDB
+    const savedSettings = await $store.getReaderSettings();
+    Object.assign(settings, savedSettings); // Merge saved settings
+
+    applyTheme();
+    applyStylesToElements();
+    await restoreHighlights(); // Await restoreHighlights
+  });
+});
+
+onBeforeUnmount(() => {
+  window.removeEventListener('scroll', handleScroll);
+  window.removeEventListener('resize', updateIsMobile);
+});
+
+</script>
+
+<style scoped>
+/* Mobile Navigation Buttons */
+.mobile-buttons-container {
+  position: fixed;
+  top: 50%;
+  left: 0;
+  right: 0;
+  display: flex;
+  justify-content: space-between;
+  padding: 0 16px;
+  pointer-events: none;
+  z-index: 999;
+}
+
+.mobile-button {
+  background-color: white;
+  border: 1px solid #ddd;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  border-radius: 50%;
+  width: 50px;
+  height: 50px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  pointer-events: auto;
+  transition: transform 0.3s ease-in-out;
+}
+
+.mobile-button.left {
+  transform: translateX(-50%);
+}
+
+.mobile-button.right {
+  transform: translateX(50%);
+}
+
+/* Pulsing Animation */
+@keyframes pulse {
+  0% {
+    transform: scale(1);
+  }
+
+  50% {
+    transform: scale(1.1);
+  }
+
+  100% {
+    transform: scale(1);
+  }
+}
+
+.pulse {
+  animation: pulse 1s ease-in-out infinite;
+}
+
+/* Floating Buttons */
+.floating-buttons {
+  position: fixed;
+  top: 50%;
+  transform: translateY(-50%);
+  z-index: 999;
+}
+
+.floating-buttons-mobile {
+  display: flex;
+  justify-content: space-between;
+  padding: 0 16px;
+}
+
+.floating-buttons-mobile button {
+  background-color: white;
+  border: 1px solid #ddd;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+.hidden-header {
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.3s ease-in-out;
+}
+
+.show-header {
+  opacity: 1;
+  pointer-events: auto;
+}
+
+/* .highlight {
+  background-color: yellow;
+} */
+
+.highlight-controls {
+  transition: opacity 0.2s ease-in-out;
+}
+
+.highlight {
+  cursor: pointer;
+  transition: background-color 0.2s ease-in-out;
+}
+
+.highlight:hover {
+  filter: brightness(0.95);
+}
+
+/* Removed iframe-overlay */
+</style>
