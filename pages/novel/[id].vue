@@ -2,7 +2,7 @@
     <div class="min-h-screen  pb-8">
       <!-- Show a loading spinner while fetching -->
       <!-- <div v-if="novel" class="flex justify-center items-center h-screen"> -->
-        <LoadingAnimation v-if="!novel"></LoadingAnimation>
+        <LoadingAnimation v-if="pending"></LoadingAnimation>
       <!-- </div> -->
       <!-- Main Content -->
       <div v-else>
@@ -68,10 +68,10 @@
                         Start Reading
                         </button>
 
-                        <button v-if="!inLibrary" @click="addToLibrary(novel.id)" class="px-6 py-2 border  bg-[--btn-color-4] text-[--btn-text-color] rounded-md ">
+                        <button v-if="!inLibrary && loggedIn" @click="addToLibrary(novel.id)" class="px-6 py-2 border  bg-[--btn-color-4] text-[--btn-text-color] rounded-md ">
                         Add to Library
                         </button>
-                        <button v-else @click="removeFromLibrary(novel.id)" class="px-6 py-2 border  bg-[--btn-color-4] text-[--btn-text-color] rounded-md ">
+                        <button v-if="inLibrary && loggedIn" @click="removeFromLibrary(novel.id)" class="px-6 py-2 border  bg-[--btn-color-4] text-[--btn-text-color] rounded-md ">
                           Remove
                         </button>
                   </div>
@@ -115,7 +115,7 @@
                         class="px-3 py-1 bg-blue-50 text-blue-600 rounded-full text-sm"
                       > 
                       <div>
-                        {{ tag.name }}
+                          {{ titleCase(tag.name) }}
                       </div>
                       </span>
                     </div>
@@ -171,7 +171,7 @@
                           :to="`/search?genres=${genre.name}`"
                           class="px-3 py-1 bg-[--tag-bg-color] text-[--tag-text-color] rounded-full text-sm hover:bg-[--tag-bg-color-hover] hover:text-[--tag-text-color-hover] transition-colors"
                         >
-                          {{ genre.name }}
+                          {{ titleCase(genre.name) }}
                         </NuxtLink>
                       </div>
                     </div>
@@ -305,12 +305,16 @@
   import { useRoute, useRouter } from 'vue-router';
   import { BookOpen, Eye, Users, Star, StarOff, Pencil, FileX, Trash, Tags, Tag  } from 'lucide-vue-next';
   import { getSessionToken, getApiKey } from '../utils/utils';
+  import { useSmartFetch } from '~/composables/useSmartFetch'
  
   import LoadingAnimation from '~/components/LoadingAnimation.vue';
+import { storeToRefs } from 'pinia';
       const params = useRoute().params;
       const router = useRouter();
       const { $store, $fetchWithCache } = useNuxtApp();
-
+      const userStore = useUserStore()
+      const {loggedIn} = storeToRefs(userStore)
+      console.log(loggedIn.value)
       const webMode = ref(await $store.getWebMode())
       var API;
       const config = useRuntimeConfig().public
@@ -321,11 +325,11 @@
       }else{
         API = config.baseSafeAPI
       }
-      const headers = ref({})
+      const headers = ref(await $store.getNormalHeaders())
       const isLatestDisabled = ref(false);
       const isFirstDisabled = ref(true);
-      const inLibrary = ref(false)
-      const bookmark = ref({})
+      // const inLibrary = ref(false)
+      const bookmark = ref(null);
       const activeTab = ref('about');
       const tabs = [
       { id: 'about', name: 'About' },
@@ -360,7 +364,7 @@
         router.push(path)
       };
   
-      const novel = ref(null);
+      // const novel = ref(null);
       // const fetchChapters = async(page = 1, limit = 20) => {
       //   try {
       //     headers.value = await $store.getNormalHeaders();
@@ -432,37 +436,75 @@
         if(response.statusCode != 200){
             router.push(`/novel/${params.id}`)
         }else{
-            novel.value = data.body;
+            novel.value = response.body;
         }
       };
         
-      onMounted(async() => {
-        const headers = await $store.getNormalHeaders()
-        const data = await $fetch(`${API}novel?id=${params.id}`,{
-            headers: headers
-        });
-        novel.value = data.body.novel;
-        inLibrary.value = data.body.inLibrary;
-        bookmark.value = data.body.bookmark;
 
-        //if book is not stored in library bookmark wil be null. so in this case localforage will supply us with bookmarkchapter
-        const bookmark_num = await $store.getBookmark(novel.value.id);
-        const cached_num_of_chapters = await $store.getNumberOfChapters(novel.value.id);
-        if(!bookmark.value){
-          bookmark.value = {} // if null then first set an object
-          bookmark.value.bookmarkedChapter = parseInt(bookmark_num);
-          bookmark.value.lastReadChapter = parseInt(bookmark_num);
+const {data, pending, error} = useSmartFetch(`${API}metadata/novel/${params.id}`,{
+  method: 'GET',
+  headers: headers.value,
+  enableCache: true,
+  cacheTime: 60000,
+})
 
-        // $store.setBookmark(novel.value.id,1);
-        }
-        if(cached_num_of_chapters !== novel.value.chapters){
-            $store.setNumberOfChapters(novel.value.id, novel.value.chapters);
-            console.log(novel.value.chapterList)
-            $store.setChapters(novel.value.id, novel.value.chapterList);
-        }
-        console.log(bookmark.value.bookmarkedChapter)
-        // fetchChapters(pagination.value.currentPage, pagination.value.pageSize)
-      });
+const novel = computed(()=>{
+  return data.value?.body.novel
+})
+const inLibrary = computed(()=>{
+  return data.value?.body.inLibrary
+})
+const backendBookmark = computed(()=>{
+  return data.value?.body.bookmark
+})
+//if book is not stored in library bookmark wil be null. so in this case localforage will supply us with bookmarkchapter
+const bookmark_num = await $store.getBookmark(params.id);
+const cached_num_of_chapters = await $store.getNumberOfChapters(params.id);
+if (!backendBookmark.value) {
+  bookmark.value = {
+    bookmarkedChapter: parseInt(bookmark_num),
+    lastReadChapter: parseInt(bookmark_num)
+  }
+}
+
+watch(pending, (newPending) => {
+  if (!newPending && novel.value) {
+    console.log('Novel:', novel.value)
+    // Now you can compare cached number of chapters and update the store:
+    if (cached_num_of_chapters !== novel.value?.chapters) {
+      $store.setNumberOfChapters(novel.value?.id, novel.value?.chapters)
+      $store.setChapters(novel.value?.id, novel.value?.chapterList)
+    }
+  }
+})
+
+      // onMounted(async() => {
+      //   const headers = await $store.getNormalHeaders()
+      //   const data = await $fetch(`${API}metadata/novel/${params.id}`,{
+      //       headers: headers
+      //   });
+      //   novel.value = data.body.novel;
+      //   inLibrary.value = data.body.inLibrary;
+      //   bookmark.value = data.body.bookmark;
+
+
+      //   //if book is not stored in library bookmark wil be null. so in this case localforage will supply us with bookmarkchapter
+      //   const bookmark_num = await $store.getBookmark(novel.value.id);
+      //   const cached_num_of_chapters = await $store.getNumberOfChapters(novel.value.id);
+      //   if (!bookmark.value) {
+      //     bookmark.value = {
+      //       bookmarkedChapter: parseInt(bookmark_num),
+      //       lastReadChapter: parseInt(bookmark_num)
+      //     }
+      //   }
+      //   if(cached_num_of_chapters !== novel.value.chapters){
+      //       $store.setNumberOfChapters(novel.value.id, novel.value.chapters);
+      //       console.log(novel.value.chapterList)
+      //       $store.setChapters(novel.value.id, novel.value.chapterList);
+      //   }
+      //   console.log(bookmark.value.bookmarkedChapter)
+      //   // fetchChapters(pagination.value.currentPage, pagination.value.pageSize)
+      // });
 
       const formatDate = (dateString) => {
         const date = new Date(dateString);

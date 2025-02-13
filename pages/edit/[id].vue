@@ -86,7 +86,7 @@
         </div>
   
         <!-- Modal Component -->
-        <div v-if="isModalOpen" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center">
+        <div v-if="isModalOpen" class="fixed inset-0 backdrop-blur-sm bg-opacity-50 flex items-center justify-center">
           <div class="bg-white rounded-lg shadow-lg w-96 p-6 sm:p-8">
             <h2 class="text-lg sm:text-xl font-[500] mb-4">{{ modalTitle }}</h2>
   
@@ -110,12 +110,12 @@
             </div>
             <div v-if="modalType === 'genre'">
               <select v-model="modalInput" class="w-full border rounded-md p-2 mb-4">
-                <option v-for="genre in genres" :key="genre" :value="genre">{{ genre }}</option>
+                <option v-for="genre in genres" :key="genre" :value="genre">{{ titleCase(genre) }}</option>
               </select>
             </div>
             <div v-if="modalType === 'status'">
               <select v-model="modalInput" class="w-full border rounded-md p-2 mb-4">
-                <option v-for="stat in statutypes" :key="stat" :value="stat">{{ stat }}</option>
+                <option v-for="stat in statutypes" :key="stat" :value="stat">{{ titleCase(stat) }}</option>
               </select>
             </div>
             <div v-if="modalType === 'tags'">
@@ -235,7 +235,7 @@
                         class="px-2 py-1 bg-blue-50 text-blue-600 rounded-full text-sm"
                       > 
                         <div>
-                          {{ tag.name }}
+                          {{ titleCase(tag.name) }}
                         </div>
                       </span>
 
@@ -293,10 +293,10 @@
                         <NuxtLink
                           v-for="genre in novel.genres"
                           :key="genre.id"
-                          :to="`/genre/${genre.slug}`"
+                          :to="`/search?genres=${genre.name}`"
                           class="px-2 py-1 bg-[--tag-bg-color] text-[--tag-text-color] rounded-full text-sm hover:bg-[--tag-bg-color-hover] hover:text-[--tag-text-color-hover] transition-colors"
                         >
-                          {{ genre.name }}
+                          {{ titleCase(genre.name) }}
                         </NuxtLink>
                       </div>
                     </div>
@@ -697,6 +697,8 @@
       })
     };
 
+
+
     const updateChapterOrder = ({ removedIndex, addedIndex }) => {
       // if (removedIndex === null || addedIndex === null) return;
 
@@ -1083,14 +1085,14 @@
         try{
           // default is 60000 ms cache
           const data = await $fetchWithCache(`${API}metadata/novel/${params.id}`);
-          console.log(data)
+    
           
           if(data.statusCode != 200){
             router.push(`/novel/${params.id}`)
           }else{
-            novel.value = data.body;
-            novelData.value = data.body;
-            updateData.value = data.body;
+            novel.value = data.body.novel;
+            novelData.value = data.body.novel;
+            updateData.value = data.body.novel;
             await getAllGenres()
           }
   

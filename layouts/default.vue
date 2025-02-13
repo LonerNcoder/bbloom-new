@@ -329,7 +329,7 @@ onMounted(async () => {
               //                 sessionToken: "",
               //                 accessToken: "",
               //                 apiKey: "",
-              //                 logged_in: false 
+              //                 loggedIn: false 
               //             } });
               //     },
               // });
@@ -347,7 +347,7 @@ onMounted(async () => {
                   selectedWebMode.value = storedWebMode;
                   locale.value = storedWebMode;
               }
-              if (storedUser && storedUser.logged_in && storedUser.username) {
+              if (storedUser && storedUser.loggedIn && storedUser.username) {
                   username.value = storedUser.username;
                   isLoggedIn.value = true;
               }

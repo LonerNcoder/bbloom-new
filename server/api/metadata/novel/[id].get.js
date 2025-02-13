@@ -1,51 +1,77 @@
+import { defineEventHandler, createError, getQuery } from 'h3';
 import { PrismaClient } from '@prisma/client';
-import { defineEventHandler, createError } from 'h3';
+import { verifyUser } from '~/server/utils';
 
-
-
-/**
- * Handles GET requests to retrieve a novel with pagination for chapters.
- *
- * @param {H3Event} event - The H3 event object.
- * @returns {Promise<{ novels: Novel[] }> | H3Error}
- *   - An object containing the novel metadata with paginated chapters.
- */
+const prisma = new PrismaClient()
 export default defineEventHandler(async (event) => {
-
-const prisma = new PrismaClient();
   try {
     const { id } = event.context.params;
-    // Validate novel id
-    if (!id || isNaN(id)) {
-      return createError({ statusCode: 402, statusMessage: 'Invalid novel id' });
+    const novel_id = parseInt(id);
+
+    if (!novel_id || isNaN(novel_id)) {
+      throw createError({ statusCode: 400, statusMessage: 'Invalid novel ID' });
     }
-      const novel_id = parseInt(id)
-      const novel = await prisma.novel.findUnique({
-        where: {
-          id: novel_id,
-        },
-        include: {
-          tags: true,
-          genres: true,
-        },
+
+    // Fetch novel with required relations
+    const novel = await prisma.novel.findUnique({
+      where: { id: novel_id },
+      include: {
+        tags: true,
+        genres: true,
+        language: true
+      }
+    });
+
+    if (!novel) {
+      throw createError({ statusCode: 404, statusMessage: 'Novel not found' });
+    }
+
+    let libraryData = null;
+    const isVerified = await verifyUser(event);
+    
+    if (isVerified && event.context.session) {
+      const userId = event.context.session.user.id;
+      
+      // Get or create user's library
+      const library = await prisma.library.upsert({
+        where: { userId },
+        create: { userId },
+        update: {}
       });
 
-      if (novel) {
-        return {
-          statusCode: 200,
-          body: novel
-          }
-      }else {
-        return createError({
-          statusCode: 403,
-          statusMessage: "Could not fetch metadata",
-        });
-      }
-    
+      // Check if novel exists in library
+      libraryData = await prisma.libraryNovel.findFirst({
+        where: {
+          libraryId: library.id,
+          novelId: novel_id
+        }
+      });
+    }
+
+    // Format response with library info
+    const response = {
+      novel: novel,
+      inLibrary: !!libraryData,
+      bookmark: libraryData ? {
+        bookmarkedChapter: libraryData.bookmarkedChapter,
+        lastReadChapter: libraryData.lastReadChapter,
+        maxChapterRead: libraryData.maxChapterRead,
+        progressPercent: libraryData.maxChapterRead > 0 
+          ? ((libraryData.maxChapterRead / novel.chapters) * 100).toFixed(1)
+          : '0.0',
+        lastVisited: libraryData.lastVisitedAt
+      } : null,
+    };
+
+    return { 
+      statusCode: 200, 
+      body: response 
+    };
+
   } catch (error) {
-    console.error('Error fetching novel:', error);
-    throw createError({ statusCode: 500, statusMessage: 'Failed to fetch novel' });
-  } finally {
-    await prisma.$disconnect();
+    return createError({ 
+      statusCode: error.statusCode || 500, 
+      message: error.message || 'Internal server error' 
+    });
   }
 });

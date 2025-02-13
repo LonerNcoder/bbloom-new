@@ -1,7 +1,8 @@
 <template>
     <div class="min-h-screen pb-8" @scroll="handleScroll" @touchstart="handleTouchStart" @touchend="handleTouchEnd">
-      <LoadingAnimation v-if="loading" />
-      <div v-else>
+      <!-- <LoadingAnimation v-if="loading" /> -->
+      <SummarizerModal v-if="showSummarize" @close="() => showSummarize = false" class="z-[10000] backdrop-blur-sm" title="Summarized Chapter" :description="chapter.content" declineButtonText="Close" />
+      <div>
         <div :class="[
           'top-0 bg-[--background-color] shadow-sm z-10 exclude-toggle',
           { 'hidden-header': !isHeaderVisible },
@@ -33,12 +34,48 @@
           </div>
         </div>
   
-        <div class="max-w-4xl mx-auto mt-8 relative" ref="contentRef">
-          <div v-if="chapter" ref="chapterBody" class="rounded-lg shadow p-4">
-            <h1 class="text-2xl font-bold mb-6">
+        <div class="max-w-7xl mx-auto mt-8 relative" ref="contentRef">
+
+          <div  ref="chapterBody" class="rounded-lg shadow p-4" :style="{backgroundColor: settings.backgroundColor, filter: `brightness(${settings.brightness}%)`}" >
+            <div v-if="loading" class="animate-pulse p-4">
+            <div class="h-8 bg-gray-300 opacity-50 rounded w-1/3 mb-10"></div>
+            <div class="flex justify-center mb-10">
+            <div class="h-8 flex-end bg-gray-300 opacity-50 rounded w-1/3"></div>
+            </div>
+            <!-- Paragraph Skeleton with varying line lengths -->
+            <div class="space-y-4 flex flex-col items-end">
+              <div class="h-4 bg-gray-300 opacity-50 rounded w-1/2"></div>
+              <div class="h-4 bg-gray-300 opacity-50 rounded w-full"></div>
+              <div class="h-4 bg-gray-300 opacity-50 rounded w-full"></div>
+
+              <div class="h-4 bg-gray-300 opacity-50 rounded w-full"></div>
+
+              <div class="h-4 bg-gray-300 opacity-50 rounded w-full"></div>
+              <div class="h-4 bg-gray-300 opacity-50 rounded w-full"></div>
+              <div class="h-4 bg-gray-300 opacity-50 rounded mt-6 w-1/2"></div>
+              <div class="h-4 bg-gray-300 opacity-50 rounded w-full"></div>
+              <div class="h-4 bg-gray-300 opacity-50 rounded w-full"></div>
+              <div class="h-4 bg-gray-300 opacity-50 rounded w-full"></div>
+              <div class="h-4 bg-gray-300 opacity-50 rounded w-full"></div>
+              <div class="h-4 bg-gray-300 opacity-50 rounded w-full"></div>
+              <div class="h-4 bg-gray-300 opacity-50 rounded w-full"></div> 
+              <div class="h-4 bg-gray-300 opacity-50 rounded w-full"></div>
+              <div class="h-4 bg-gray-300 opacity-50 rounded w-full"></div>
+              <div class="h-4 bg-gray-300 opacity-50 rounded w-full"></div>
+              <div class="h-4 bg-gray-300 opacity-50 rounded w-full"></div>
+              <div class="h-4 bg-gray-300 opacity-50 rounded w-full"></div>
+              <div class="h-4 bg-gray-300 opacity-50 rounded w-full"></div>
+              <div class="h-4 bg-gray-300 opacity-50 rounded mt-10 w-1/2"></div>
+              <div class="h-4 bg-gray-300 opacity-50 rounded w-full"></div>
+              <div class="h-4 bg-gray-300 opacity-50 rounded w-full"></div>
+              
+              
+            </div>
+          </div>
+            <h1 v-show="chapter" class="text-sm font-bold" :style="{color: settings.fontColor}">
               Chapter {{ chapter.chapterNumber }}: {{ chapter.title }}
             </h1>
-            <div v-dompurify-html="processedContent" ref="contentDiv"></div>
+            <div :style="{color: settings.fontColor, fontSize: `${settings.fontSize}px`}" v-show="chapter" v-dompurify-html="processedContent" ref="contentDiv"></div>
           </div>
   
           <div class="flex justify-between mt-8">
@@ -62,7 +99,8 @@
             :gestureEnabled="Boolean(settings.gestureEnabled)" :fontColor="settings.fontColor"
             @fontsizeChanged="handleFontSizeChange" @brightnessChanged="handleBrightnessChange"
             @backgroundChanged="handleBackgroundChange" @fontColorChanged="handleFontColorChange"
-            @bookmark="handleBookmark" @gesture="handleGesture">
+            @bookmark="handleBookmark" @gesture="handleGesture" @summarize="handleSummarize">
+            
           </FloatingSettings>
   
           <div v-if="isMobile && showButtons" class="mobile-buttons-container">
@@ -110,9 +148,12 @@
   const contentDiv = ref<HTMLElement | null>(null);
   const initialTouchX = ref(0);
   const initialTouchY = ref(0);
+  const showSummarize = ref(false);
   
   const settings = reactive(await $store.getReaderSettings());
   
+
+
   const chapter = ref({
     chapterNumber: 0,
     title: '',
@@ -226,27 +267,27 @@
   
   const handleFontSizeChange = (newFontVal: string) => {
     settings.fontSize = parseInt(newFontVal);
-    applyStylesToElements();
+    // applyStylesToElements();
   };
   
   const handleBackgroundChange = (newBgVal: string) => {
     settings.backgroundColor = newBgVal;
-    applyTheme();
+    // applyTheme();
   };
   
   const handleBrightnessChange = (newBrightnessVal: string) => {
     settings.brightness = newBrightnessVal;
-    applyTheme();
+    // applyTheme();
   };
   
   const handleFontColorChange = (newColor: string) => {
     settings.fontColor = newColor;
-    applyStylesToElements();
+    // applyStylesToElements();
   };
   
   const handleSummarize = () => {
-    // Add your summarize logic here
-    console.log('Summarize functionality not implemented yet.');
+    showSummarize.value = true;
+    console.log("summarizing");
   };
   
   const handleGesture = (newVal: boolean) => {
@@ -270,9 +311,11 @@
   
   watch(settings, async (newVal) => {
     await $store.setReaderSettings(newVal);
-    applyTheme();
-    applyStylesToElements();
+    // applyTheme();
+    // applyStylesToElements();
   }, { deep: true });
+
+  applyTheme();
   
   onMounted(async () => {
     await Promise.all([fetchChapter(), fetchTotalChapters()]);
@@ -285,8 +328,8 @@
     nextTick(async () => {
       const savedSettings = await $store.getReaderSettings();
       Object.assign(settings, savedSettings);
-      applyTheme();
-      applyStylesToElements();
+      // applyTheme();
+      // applyStylesToElements();
     });
   });
   
@@ -294,6 +337,12 @@
     window.removeEventListener('scroll', handleScroll);
     window.removeEventListener('resize', updateIsMobile);
   });
+
+  // onBeforeRouteUpdate((to, from, next) => {
+  // // Fetch the new chapter when the route changes
+  //   fetchChapter();
+  //   next();
+  // });
   </script>
   
   <style scoped>
@@ -335,5 +384,8 @@
     opacity: 0;
     pointer-events: none;
     transition: opacity 0.3s ease-in-out;
+  }
+  .content {
+    transition: filter 0.3s ease;
   }
   </style>

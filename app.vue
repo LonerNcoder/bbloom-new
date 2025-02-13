@@ -46,7 +46,7 @@
 html {
 font-size: 16px; /* Default root font size for desktops */
 }
-
+html, body { height: 100%; margin: 0; }
 @media (max-width: 768px) {
 html {
   font-size: 14px; /* Root font size for tablets */
@@ -57,9 +57,8 @@ html {
 html {
   font-size: 12px; /* Root font size for smartphones */
 }
-.tox-tinymce { 
-  border-radius: 8px !important;
-}
+
+
 }
 .logo-font{
 font-size: 1.5em;
@@ -148,6 +147,33 @@ background-color: #b91c1c; /* Darker danger on hover */
   --card-bg-color-5: #00A6A6;
   --author-name-text-color: #00A6A6;
   --novel-page-section-bg-color: #ffffff;
+
+  --chapter-body-bg-color: #ffffff;
+  --chapter-body-text-color: #000000;
+
+  --modal-bg-color: #ffffff; 
+  --modal-text-color: rgb(17,24,39);
+  --modal-border-color: rgb(229 231 235);
+  --modal-button-bg-color: #000000;
+  --modal-button-text-color: rgb(156,163,175);
+  --modal-button-hover-bg-color: rgb(229 231 235);
+  --modal-button-border-color: #000000;
+  --modal-button-footer-bg-color: rgb(229 231 235);
+  --modal-button-footer-border-color: rgb(229 231 235);
+
+  --modal-button-1-bg-color: rgb(29 78 216);
+  --modal-button-1-text-color: rgb(255, 255, 255);
+  --modal-button-1-hover-text-color: rgb(255 255 255);
+  --modal-button-1-focus-color: rgb(147 197 253);
+  --modal-button-1-hover-bg-color: rgb(229 231 235);
+  --modal-button-1-border-color: rgb(229 231 235);
+
+  --modal-button-2-bg-color: rgb(255, 255, 255);
+  --modal-button-2-text-color: rgb(17 24 39 );
+  --modal-button-2-hover-text-color: rgb(29 78 216);
+  --modal-button-2-hover-bg-color: rgb(243 244 246 );
+  --modal-button-2-border-color: rgb(229 231 235);
+  --modal-button-2-focus-color: rgb(243 244 246);
 
   /* color: var(--search-bar-text-color); */
   --foreground-color: #ffffff;        /* Pure white for contrast */
@@ -371,6 +397,36 @@ html[data-theme="dark"] {
   --btn-color-3:#894480;
   --btn-color-4:#9b5e91;
   --btn-color-5:#ac78a3;
+
+  --chapter-body-bg-color: #202020;
+  --chapter-body-text-color: #ededed;
+
+  --modal-bg-color: rgb(55 65 81); 
+  --modal-text-color: rgb(255 255 255);
+  --modal-border-color: rgb(75 85 99);
+  --modal-button-bg-color: #000000;
+  --modal-button-text-color: rgb(156,163,175);
+  --modal-button-hover-text-color: rgb(255 255 255);
+  --modal-button-hover-bg-color: rgb(75 85 99);
+  --modal-button-border-color: #000000;
+  --modal-button-footer-bg-color: rgb(75 85 99);
+  
+  --modal-button-1-bg-color: rgb(37 99 235);
+  --modal-button-1-text-color: rgb(255, 255, 255);
+  --modal-button-1-focus-color:  rgb(30 64 175);
+  --modal-button-1-hover-bg-color: rgb(29 78 216);
+  --modal-button-1-border-color: #000000;
+
+  --modal-button-2-bg-color: rgb(31 41 55);
+  --modal-button-2-text-color: rgb(156 163 175);
+  --modal-button-2-hover-text-color: rgb(255 255 255);
+  --modal-button-2-border-color:  rgb(229 231 235);
+  --modal-button-2-hover-bg-color: rgb(55 65 81 );
+  --modal-button-2-border-color: #000000;
+  --modal-button-2-focus-color: rgb(55 65 81);
+
+
+
   --icon-color-4: #9b5e91;
   --border-color: #3f3f46;  
   --delete-btn-bg-color: rgb(44, 22, 24);

@@ -74,13 +74,13 @@ class Store {
         settings = settings?JSON.parse(settings):settings
 
         return settings || {
-            backgroundColor: '#ffffff',
+            backgroundColor: 'var(--chapter-body-bg-color)',
             fontSize: 16,
             brightness: 100,
             isBookmarked: false,
             gestureEnabled: false,
             isButtonVisible: true,
-            fontColor: '#000000',
+            fontColor: 'var(--chapter-body-text-color)',
           };
     }
 
@@ -192,7 +192,7 @@ class Store {
                 sessionToken: "",
                 accessToken: "",
                 apiKey: "",
-                logged_in: false
+                loggedIn: false
             };
             await this.setUserData(userData);
         }
@@ -217,14 +217,15 @@ class Store {
      */
     async getLoginStatus() {
         if (!process.client) return null;
-        const store = await this.getAccountSettingsStore();
-        if (!store) return null;
 
-        let status = await store.get("loginStatus");
-        if (typeof status === 'string') {
-            return status.toLowerCase() === 'true';
+        let status = await this.getUserData();
+        console.log(status)
+        // status = status?JSON.parse(status):status
+        console.log(status)
+        if (typeof status.loggedIn === 'string') {
+            return status.loggedIn.toLowerCase() === 'true';
         }
-        return status;
+        return status.loggedIn;
     }
 
     /**
@@ -235,8 +236,10 @@ class Store {
     async setLoginStatus(status: boolean) {
         if (!process.client) return;
         const store = await this.getAccountSettingsStore();
+        const userData = await this.getUserData();  
         if (!store) return;
-        await store.put(status, "loginStatus"); // Corrected put - value, key
+        userData.loggedIn = status;
+        await this.setUserData(userData);
     }
 
     /**
@@ -250,7 +253,7 @@ class Store {
         if (!store) return null;
 
         const chapters = await store.get(`novel_n_chapters_${novel_id}`);
-        return chapters !== undefined ? chapters : -1;
+        return chapters !== undefined ? chapters : 0;
     }
 
     /**
@@ -591,18 +594,18 @@ class Store {
     async isLoggedIn() {
         if (!process.client) return null;
         const userData = await this.getUserData();
-        return userData ? userData.logged_in : false;
+        return userData ? userData.loggedIn : false;
     }
 
     /**
      * Set the login status.
-     * @param {boolean} logged_in - The login status to set.
+     * @param {boolean} loggedIn - The login status to set.
      * @returns {Promise<void>}
      */
-    async setLoggedIn(logged_in: boolean) {
+    async setLoggedIn(loggedIn: boolean) {
         if (!process.client) return;
         const userData = await this.getUserData() || {};
-        userData.logged_in = logged_in;
+        userData.loggedIn = loggedIn;
         await this.setUserData(userData);
     }
 

@@ -42,7 +42,7 @@ export async function getApiKey() {
  */
 export async function isLoggedIn() {
   const user = await getUserData();
-  return user?.value.logged_in;
+  return user?.value.loggedIn;
 }
 /**
  * Retrieves the user ID from the user data in IndexedDB.

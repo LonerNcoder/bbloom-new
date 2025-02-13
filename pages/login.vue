@@ -109,10 +109,10 @@
   })
 
   const { $store } = useNuxtApp();
-  
+  const API = useRuntimeConfig().public.baseSafeAPI
   const dbName = 'client-db';
   const storeName = 'account-settings';
-  
+  const userStore = useUserStore()
   const router = useRouter()
   const username = ref('')
   const password = ref('')
@@ -156,7 +156,7 @@
         username: username.value,
         password: password.value
       }
-      const response = await $fetch('${API}login', {
+      const response = await $fetch(`${API}login`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json'
@@ -173,9 +173,10 @@
           sessionToken: data.sessionToken,
           accessToken: data.accessToken,
           apiKey: data.apiKey,
-          logged_in: true
+          loggedIn: true
         }
         // Store user data in IndexedDB
+        userStore.setUserData(userData)
 
         await $store.setUserData(userData)
         

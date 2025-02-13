@@ -58,7 +58,7 @@
         <!--Removed for view more-->
          <div class="pagination">
           <button @click="previousPage" :disabled="currentPage === 1">Previous</button>
-          <span>Page {{ currentPage }} of {{ totalPages }}</span>
+          <span>Page {{ currentPage }} of {{ totalPages || 1 }}</span>
           <button @click="nextPage" :disabled="currentPage === totalPages">Next</button>
         </div>
       </section>
@@ -66,18 +66,14 @@
   </div>
 </template>
 
-<script>
+<script setup>
 import NovelCard from '~/components/NovelCard.vue';
 import NovelsGrid from '../components/NovelsGrid.vue';
 import { ref, computed, onMounted, watch } from 'vue';
 import { useRoute, useRouter } from 'vue-router'; // Import useRoute and useRouter
+import { useSmartFetch } from '~/composables/useSmartFetch'
 
-export default {
-  components: {
-    NovelCard,
-    NovelsGrid,
-  },
-  setup() {
+
     const novels = ref([]);
     const error = ref(null);
     const loading = ref(true);
@@ -89,8 +85,20 @@ export default {
     const currentPage = ref(parseInt(route.query.page) || 1); // Get page from URL, default to 1
     const itemsPerPage = ref(10);  // Number of items per page
     const totalItems = ref(0);      // Total number of novels (from API)
-
+    const {$store} = useNuxtApp()
+    const webMode = ref(await $store.getWebMode());
     const totalPages = ref(1);
+    var API;
+    const config = useRuntimeConfig().public
+    if(webMode.value === "Safe"){
+      API = `${config.baseSafeAPI}search?mode=Safe&`
+    }else if(webMode.value === "Pirate"){
+      const basePriateUrl = config.basePriateAPI
+      API = basePriateUrl + "?"
+    }else{
+      API = `${config.baseSafeAPI}search?mode=Nsfw&`
+
+    }
 
     const rankingCategories = ref([
       { id: 'likes', name: 'Most Popular' },
@@ -165,7 +173,7 @@ export default {
       error.value = null;
       try {
         // Construct the API endpoint URL based on selected genre and category
-        let url = `${API}search?genres=${selectedGenre.value}&sort=${selectedCategory.value.id}&limit=${itemsPerPage.value}&page=${currentPage.value}`;  // Base URL with sorting
+        let url = `${API}genres=${selectedGenre.value}&sort=${selectedCategory.value.id}&limit=${itemsPerPage.value}&page=${currentPage.value}`;  // Base URL with sorting
 
         //Append multiple genres later
 
@@ -196,26 +204,6 @@ export default {
     );
 
     onMounted(fetchNovels); // Initial fetch
-
-
-    return {
-      novels,
-      rankingCategories,
-      genres,
-      selectedGenre,
-      selectGenre,
-       selectedCategory, //return selected category
-      selectCategory, //return select category
-      loading,
-      isSidebarOpen, // Expose sidebar state
-      toggleSidebar,  // Expose toggle function
-      currentPage,
-      totalPages,
-      previousPage,
-      nextPage,
-    };
-  },
-};
 </script>
 
 <style scoped>

@@ -32,7 +32,7 @@
                   <Palette class="w-4 h-4" />
                   Background Color
               </label>
-              <input type="color" v-model="currentBackgroundColor" class="w-full h-8 rounded cursor-pointer" />
+              <input type="color"  v-model="currentBackgroundColor" :style="{ filter: $colorMode.preference === 'dark' ? 'invert(1)' : 'none' }" class="w-full h-8 rounded cursor-pointer" />
           </div>
 
           <!-- Font Color -->
@@ -41,7 +41,7 @@
                   <Palette class="w-4 h-4" />
                   Font Color
               </label>
-              <input type="color" v-model="currentFontColor" class="w-full h-8 rounded cursor-pointer" />
+              <input type="color" v-model="currentFontColor" :style="{ filter: $colorMode.preference === 'dark' ? 'invert(1)' : 'none' }" class="w-full h-8 rounded cursor-pointer" />
           </div>
 
           <!-- Font Size -->
@@ -85,7 +85,7 @@
           <!-- Summarize -->
           <button @click="handleSummarize" class="flex items-center gap-2 w-full p-2 rounded bg-blue-50 hover:bg-blue-100">
               <FileText class="w-4 h-4" />
-              <span class="text-sm font-medium">Summarize Chapter</span>
+              <span class="text-sm font-medium">Summarize !</span>
           </button>
       </div>
   </Transition>
@@ -124,7 +124,7 @@ watch(bookmarked, (newValue) => emit('bookmark', newValue));
 watch(isGestureEnabled, (newValue) => emit('gesture', newValue));
 watch(currentFontColor, (newValue) => emit('fontColorChanged', newValue)); // Emit font color changes
 
-
+const { $colorMode } = useNuxtApp();
 // New state for mobile expansion
 const isExpanded = ref(false);
 
@@ -135,6 +135,44 @@ const isOpen = ref(false);
 const isDragging = ref(false);
 const isButtonVisible = ref(props.isButtonVisible);
 
+// Helper function to invert a hex color
+function invertColor(hex: string): string {
+  // Remove the hash if present
+  if (hex.startsWith('#')) hex = hex.slice(1)
+  // Expand shorthand form (e.g. "03F") to full form ("0033FF")
+  if (hex.length === 3) hex = hex.split('').map(x => x + x).join('')
+  const r = (255 - parseInt(hex.substring(0, 2), 16))
+    .toString(16)
+    .padStart(2, '0')
+  const g = (255 - parseInt(hex.substring(2, 4), 16))
+    .toString(16)
+    .padStart(2, '0')
+  const b = (255 - parseInt(hex.substring(4, 6), 16))
+    .toString(16)
+    .padStart(2, '0')
+  return `#${r}${g}${b}`
+}
+
+const effectiveBackgroundColor = computed(() => {
+  return $colorMode.preference === 'dark'
+    ? invertColor(currentBackgroundColor.value)
+    : currentBackgroundColor.value
+})
+
+const effectiveFontColor = computed(() => {
+  return $colorMode.preference === 'dark'
+    ? invertColor(currentFontColor.value)
+    : currentFontColor.value
+})
+
+watch(effectiveBackgroundColor, (newVal) => {
+  // Do something with the new background color if needed
+  emit('backgroundChanged', newVal)
+})
+watch(effectiveFontColor, (newVal) => {
+  // Do something with the new font color if needed
+  emit('fontColorChanged', newVal)
+})
 // Position state
 const position = reactive({ x: 0, y: 0 });
 
@@ -371,7 +409,7 @@ const toggleBookmark = () => {
 };
 
 const handleSummarize = () => {
-  emit('summarize', {});
+  emit('summarize',);
 };
 
 const updatePanelPosition = () => {

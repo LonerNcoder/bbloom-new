@@ -6,6 +6,7 @@ export default defineNuxtConfig({
     "@nuxt/ui",
     '@nuxt/image',
     'radix-vue/nuxt',
+    '@pinia/nuxt',
     (_options, nuxt) => {
       nuxt.hooks.hook('vite:extendConfig', (config) => {
         // @ts-expect-error
@@ -13,6 +14,10 @@ export default defineNuxtConfig({
       })
     },
   ],
+  devServer: {
+    port: 3000,
+    host: '0.0.0.0',
+  },
   build: {
     transpile: ['vuetify'],
   },

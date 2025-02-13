@@ -80,7 +80,7 @@ export default defineEventHandler(async (event) => {
 
     // 2. Genre Condition (if provided)
    if (genres.trim() !== "") {
-      const queriedGenres = genres.split(",").map(decodeURIComponent);
+      const queriedGenres = genres.split(",").map(decodeURIComponent).map(g => g.toLowerCase());;
       if (type === "or") {
         where.AND.push({ genres: { some: { name: { in: queriedGenres } } } }); // At least one genre
       } else if (type === "and") {
@@ -94,7 +94,7 @@ export default defineEventHandler(async (event) => {
 
     // 3. Tag Condition (if provided)
     if (tags.trim() !== "") {
-      const queriedTags = tags.split(",").map(decodeURIComponent);
+      const queriedTags = tags.split(",").map(decodeURIComponent).map(t => t.toLowerCase());
       if (type === "or") {
         where.AND.push({ tags: { some: { name: { in: queriedTags } } } }); // At least one tag
       } else if (type === "and") {
