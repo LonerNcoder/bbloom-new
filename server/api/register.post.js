@@ -38,16 +38,21 @@ export default defineEventHandler(async (event) => {
     // Hash the password
     const hashedPassword = await bcrypt.hash(password, 5);
 
-    // Create the user
+    //user can have multiple libraries, but we need to create a default one, we need user id to create a default library
     const newUser = await prisma.user.create({
       data: {
         username: username,
         image: "default_profile.jpg",
         password: hashedPassword,
-        library:{
-          create: {}
-        }
-      },
+      }
+    });
+    //create a default library for the user
+    await prisma.library.create({
+      data: {
+        userId: newUser.id,
+        createdAt: new Date(),
+        updatedAt: new Date()
+      }
     });
 
     return { statusCode: 200, statusMessage: "OK" };

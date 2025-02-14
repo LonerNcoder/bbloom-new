@@ -1,0 +1,296 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL3")
+}
+
+
+model Novel {
+  id          Int       @id @default(autoincrement())
+  title       String
+  author      String
+  genres      Genre[]
+  coverImage  String?
+  summary     String?
+  chapters    Int
+  status      String   @default("Completed")
+  isPrivate   Boolean  @default(false)
+  rating      Float    @default(0.0)
+  uploadedAt  DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  // -- Ranking Metrics --
+  // All-Time Counters
+  totalReads    Int     @default(0)
+  totalViews    Int     @default(0)
+  totalLikes    Int     @default(0)
+  totalSaves    Int     @default(0)
+  totalDislikes Int     @default(0)
+
+  // Periodic Counters (reset via cron)
+  dailyReads    Int     @default(0)
+  dailyViews    Int     @default(0)
+  dailyLikes    Int     @default(0)
+  dailySaves    Int     @default(0)
+
+  weeklyReads   Int     @default(0)
+  weeklyViews   Int     @default(0)
+  weeklyLikes   Int     @default(0)
+  weeklySaves   Int     @default(0)
+
+  monthlyReads  Int     @default(0)
+  monthlyViews  Int     @default(0)
+  monthlyLikes  Int     @default(0)
+  monthlySaves  Int     @default(0)
+
+  // -- Indexes for Ranking Queries --
+  // All-Time Indexes
+  @@index([totalReads(sort: Desc)])
+  @@index([totalViews(sort: Desc)])
+  @@index([totalLikes(sort: Desc)])
+  @@index([totalSaves(sort: Desc)])
+
+  // -- Relationships --
+  tags        Tag[]
+  chapterList Chapter[] 
+  unPublishedChapterList  UnPublishedChapter[]
+  drafts      Drafts[]
+  writtenBy   User?     @relation(name: "UserToNovel", fields: [authorId], references: [id])
+  uploadedBy  User?     @relation(name: "UploaderToNovel", fields: [uploaderId], references: [id])
+  authorId    String?
+  uploaderId  String?
+  language    Language? @relation(name: "LanguageToNovel", fields: [langId], references: [id])
+  langId      Int?
+  libraryNovels LibraryNovel[] @relation(name: "NovelToLibraryNovel") // Fixed relation name
+  lastUpdatedChapterAt DateTime?
+  likedBy     Like[]
+  dislikedBy  Dislike[]
+  readBy      ReadingHistory[]
+  bookmarks NovelBookmark[]
+}
+
+model Library {
+  id            Int            @id @default(autoincrement())
+  name          String         @default("default")
+  user          User           @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId        String         @unique
+  libraryNovels LibraryNovel[] @relation(name: "LibraryToLibraryNovel") // Fixed relation name
+  createdAt     DateTime       @default(now())
+  updatedAt     DateTime       @updatedAt
+  @@index([userId, name])
+}
+
+model LibraryNovel {
+  id              Int       @id @default(autoincrement())
+  library         Library   @relation(name: "LibraryToLibraryNovel", fields: [libraryId], references: [id], onDelete: Cascade)
+  libraryId       Int       
+  novel           Novel     @relation(name: "NovelToLibraryNovel", fields: [novelId], references: [id], onDelete: Cascade)
+  novelId         Int       
+  addedAt        DateTime  @default(now())
+  @@unique([libraryId, novelId])
+  @@index([addedAt])
+}
+
+model NovelRead {
+  id        Int      @id @default(autoincrement())
+  userId    String   // User's unique ID
+  novelId   Int      // Novel's unique ID
+  createdAt DateTime @default(now())
+  
+  @@unique([userId, novelId])  // Ensure unique reads per user per novel
+  @@index([createdAt])
+}
+model NovelView {
+  id        Int      @id @default(autoincrement())
+  userId    String   // User's unique ID
+  novelId   Int      // Novel's unique ID
+  createdAt DateTime @default(now())
+  
+  @@unique([userId, novelId])  // Ensure unique views per user per novel
+  @@index([createdAt])
+}
+
+model Like {
+  id       Int      @id @default(autoincrement())
+  user     User     @relation(fields: [userId], references: [id])
+  userId   String
+  novel    Novel    @relation(fields: [novelId], references: [id])
+  novelId  Int
+  createdAt DateTime @default(now()) // When the user liked the novel
+
+  @@unique([userId, novelId]) // Prevent duplicate likes by the same user for the same novel
+  @@index([createdAt])
+}
+
+model Dislike {
+  id       Int      @id @default(autoincrement())
+  user     User     @relation(fields: [userId], references: [id])
+  userId   String
+  novel    Novel    @relation(fields: [novelId], references: [id])
+  novelId  Int
+  createdAt DateTime @default(now()) // When the user liked the novel
+  @@unique([userId, novelId]) // Prevent duplicate likes by the same user for the same novel
+  @@index([createdAt])
+}
+
+model Language {
+  id           Int  @id @default(autoincrement())
+  name         String @unique
+  novels       Novel[] @relation(name: "LanguageToNovel")
+
+}
+
+model Chapter {
+  id            Int     @id @default(autoincrement())
+  novel         Novel   @relation(fields: [novelId], references: [id], onDelete: Cascade)
+  novelId       Int
+  title         String
+  content       String
+  chapterNumber Int
+  uploadedAt    DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+}
+
+model UnPublishedChapter {
+  id            Int     @id @default(autoincrement())
+  novel         Novel   @relation(fields: [novelId], references: [id], onDelete: Cascade)
+  novelId       Int
+  title         String
+  content       String
+  chapterNumber Int
+  uploadedAt    DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+  scheduledToRelease  DateTime?
+}
+
+model Drafts {
+  id            Int     @id @default(autoincrement())
+  novel         Novel   @relation(fields: [novelId], references: [id])
+  novelId       Int
+  title         String
+  content       String
+  createdAt    DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+}
+
+model Tag {
+  id     Int     @id @default(autoincrement())
+  name   String  @unique
+  novels Novel[]
+}
+model Genre {
+  id      Int     @id @default(autoincrement())
+  name    String  @unique
+  novels  Novel[]
+}
+
+// New model for multiple bookmarks per novel per user
+model NovelBookmark {
+  id        Int      @id @default(autoincrement())
+  userId    String
+  novelId   Int
+  chapter   Int      // The bookmarked chapter number
+  addedAt   DateTime @default(now())
+  note      String?  // Optional note for the bookmark
+  user   User  @relation(fields: [userId], references: [id], onDelete: Cascade)
+  novel  Novel @relation(fields: [novelId], references: [id], onDelete: Cascade)
+  @@index([userId, novelId]) // Index for faster queries
+  @@index([addedAt])        // Index for sorting by date
+  @@unique([userId, novelId, chapter])
+}
+
+model User {
+  id        String    @id @unique @default(cuid())
+  username  String    @unique
+  password  String
+  image     String?
+  account  Account?
+  session  Session?
+  apiKey   ApiKey?
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+  libraries   Library[]
+  novels    Novel[]   @relation(name: "UserToNovel")
+  uploads   Novel[]   @relation(name: "UploaderToNovel")
+  likes     Like[]    // Track likes by the user
+  dislikes  Dislike[] // Track dislikes by the user
+  readingHistory ReadingHistory[]
+  readingPreferences UserReadingPreferences?
+  bookmarks NovelBookmark[]
+}
+
+model ReadingHistory {
+  id        Int      @id @default(autoincrement())
+  userId    String
+  novelId   Int
+  lastReadChapter Int      @default(1)
+  maxChapterRead Int      @default(1)
+  lastVisitedAt    DateTime @default(now())
+  user   User  @relation(fields: [userId], references: [id], onDelete: Cascade)
+  novel  Novel @relation(fields: [novelId], references: [id], onDelete: Cascade)
+  
+  @@unique([userId, novelId])
+}
+
+model UserReadingPreferences {
+  id       Int     @id @default(autoincrement())
+  userId   String  @unique
+  user     User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  fontSize String  @default("medium") // small/medium/large
+  theme    String  @default("light")  // light/dark
+  autoScrollEnabled Boolean @default(false)
+}
+
+
+
+model Session {
+  id           String   @id @unique @default(cuid())
+  userId       String   @unique
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  sessionToken String   @unique
+  accessToken  String   @unique
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+  expiresAt    DateTime?
+}
+
+model ApiKey {
+  id        String   @id @default(cuid())
+  key       String   @unique
+  userId    String   @unique
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  expiresAt DateTime
+  createdAt DateTime @default(now())
+}
+
+model VerificationToken {
+  identifier String
+  token      String   @unique
+  expires    DateTime
+
+  @@unique([identifier, token])
+}
+
+model Account {
+  id                 String  @id @default(cuid())
+  userId             String  @unique
+  type               String
+  provider           String
+  providerAccountId  String
+  refresh_token      String?
+  access_token       String?
+  expires_at         Int?
+  token_type         String?
+  scope              String?
+  id_token           String?
+  session_state      String?
+  user               User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  @@unique([provider, providerAccountId])
+}
+

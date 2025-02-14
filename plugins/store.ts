@@ -392,31 +392,93 @@ class Store {
     }
 
     /**
-     * Get the bookmark for a novel.
+     * Get the last read chapter for a novel.
      * @param {number} novel_id - The ID of the novel.
-     * @returns {Promise<number|null>} The bookmark chapter number.
+     * @returns {Promise<number|null>} The last read chapter number.
      */
-    async getBookmark(novel_id: number) {
+    async getLastReadChapter(novel_id: number) {
         if (!process.client) return null;
         const store = await this.getNovelDetailsCacheStore();
         if (!store) return null;
 
-        const bookmark = await store.get(`bookmark_${novel_id}`);
-        return bookmark !== undefined ? bookmark : 1;
+        const lastReadChapter = await store.get(`last_read_chapter_${novel_id}`);
+        return lastReadChapter !== undefined ? lastReadChapter : 1;
     }
 
     /**
-     * Set the bookmark for a novel.
+     * Set the last read chapter for a novel.
      * @param {number} novel_id - The ID of the novel.
-     * @param {number} bookmark - The bookmark chapter number to set.
+     * @param {number} lastReadChapter - The last read chapter number to set.
      * @returns {Promise<void>}
      */
-    async setBookmark(novel_id: number, bookmark: number) {
+    async setLastReadChapter(novel_id: number, lastReadChapter: number) {
         if (!process.client) return;
         const store = await this.getNovelDetailsCacheStore();
         if (!store) return;
-        await store.put(bookmark, `bookmark_${novel_id}`); // Corrected put - value, key
+        await store.put(lastReadChapter, `last_read_chapter_${novel_id}`); // Corrected put - value, key
     }
+
+    /**
+ * Get the bookmarks for a novel.
+ * Returns an array of bookmark objects.
+ */
+async getBookmarks(novel_id: number): Promise<any[]> {
+    if (!process.client) return [];
+    const store = await this.getNovelDetailsCacheStore();
+    if (!store) return [];
+    const bookmarks = await store.get(`bookmarks_${novel_id}`);
+    return bookmarks || [];
+  }
+  
+  /**
+   * Set the bookmarks for a novel.
+   * Replaces the bookmarks array.
+   */
+  async setBookmarks(novel_id: number, bookmarks: any[]): Promise<void> {
+    if (!process.client) return;
+    const store = await this.getNovelDetailsCacheStore();
+    if (!store) return;
+    await store.put(bookmarks, `bookmarks_${novel_id}`);
+  }
+  
+  /**
+ * Add a new bookmark for a novel.
+ * Here, the provided bookmark is a chapter number.
+ * This function creates a bookmark object with the chapter and addedAt date.
+ */
+async addBookmark(novel_id: number, chapter: number): Promise<void> {
+    if (!process.client) return;
+    const store = await this.getNovelDetailsCacheStore();
+    if (!store) return;
+  
+    const key = `bookmarks_${novel_id}`;
+    // Retrieve current bookmarks (array of objects)
+    let bookmarks: { chapter: number; addedAt: string }[] = await store.get(key) || [];
+    
+    // Create a new bookmark object
+    const newBookmark = {
+      chapter,
+      addedAt: new Date().toISOString()
+    };
+  
+    bookmarks.push(newBookmark);
+    await store.put(bookmarks, key);
+  }
+  
+  /**
+   * Remove a bookmark for a novel by chapter number.
+   */
+  async removeBookmark(novel_id: number, chapter: number): Promise<void> {
+    if (!process.client) return;
+    const store = await this.getNovelDetailsCacheStore();
+    if (!store) return;
+  
+    const key = `bookmarks_${novel_id}`;
+    let bookmarks: { chapter: number; addedAt: string }[] = await store.get(key) || [];
+    // Remove bookmarks that have the matching chapter number
+    bookmarks = bookmarks.filter(b => b.chapter !== chapter);
+    await store.put(bookmarks, key);
+  }
 
     /**
      * Get the user ID.

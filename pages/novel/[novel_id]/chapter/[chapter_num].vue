@@ -93,12 +93,7 @@
             </button>
           </div>
   
-          <FloatingSettings :fontsize="parseInt(settings.fontSize)" :brightness="parseInt(settings.brightness)"
-            :backgroundColor="settings.backgroundColor" :bookmark="Boolean(settings.isBookmarked)"
-            :isMobile="Boolean(isMobile)" :isButtonVisible="Boolean(settings.isButtonVisible)"
-            :gestureEnabled="Boolean(settings.gestureEnabled)" :fontColor="settings.fontColor"
-            @fontsizeChanged="handleFontSizeChange" @brightnessChanged="handleBrightnessChange"
-            @backgroundChanged="handleBackgroundChange" @fontColorChanged="handleFontColorChange"
+          <FloatingSettings v-if="!floatingSettingsLoading" :bookmark="isChapterBookmarked"
             @bookmark="handleBookmark" @gesture="handleGesture" @summarize="handleSummarize">
             
           </FloatingSettings>
@@ -125,12 +120,12 @@
   
   const { $store } = useNuxtApp();
 
-  const webMode = ref(await $store.getWebMode())
+  const webModeStore = useWebModeStore()
   var API:String;
   const config = useRuntimeConfig().public
-  if(webMode.value === "Safe"){
+  if(webModeStore.webMode === "Safe"){
     API = String(config.baseSafeAPI)
-  }else if(webMode.value === "Pirate"){
+  }else if(webModeStore.webMode === "Pirate"){
     API = String(config.basePriateAPI)
   }else{
     API = String(config.baseSafeAPI)
@@ -150,8 +145,8 @@
   const initialTouchY = ref(0);
   const showSummarize = ref(false);
   
-  const settings = reactive(await $store.getReaderSettings());
-  
+  // const settings = reactive(await $store.getReaderSettings());
+  const settings = useReaderStore()
 
 
   const chapter = ref({
@@ -196,6 +191,24 @@
       }
     }
   };
+
+  const floatingSettingsLoading = ref(true);
+  const isChapterBookmarked = ref(false);
+
+  watch(
+
+    () => [route.params.novel_id, route.params.chapter_num],
+    async () => {
+      floatingSettingsLoading.value = true;
+      const novelId = parseInt(route.params.novel_id as string);
+      const chapterNum = parseInt(route.params.chapter_num as string);
+      const bm = await $store.getBookmarks(novelId);
+      // Update the ref with the correct boolean
+      isChapterBookmarked.value = bm.some(b => b.chapter === chapterNum);
+      floatingSettingsLoading.value = false;
+    },
+    { immediate: true }
+  );
   
   const navigateChapter = (direction: number) => {
     const newChapterNum = parseInt(route.params.chapter_num as string) + direction;
@@ -244,46 +257,46 @@
     isMobile.value = window.innerWidth < 768;
   };
   
-  const applyStylesToElements = () => {
-    if (!chapterBody.value) return;
+  // const applyStylesToElements = () => {
+  //   if (!chapterBody.value) return;
   
-    nextTick(() => {
-      const elements = chapterBody.value!.querySelectorAll(
-        'h1, h2, h3, h4, h5, h6, p, div, span, a, li, ul, ol, label, input, button, .text'
-      );
-      elements.forEach((el) => {
-        (el as HTMLElement).style.fontSize = `${settings.fontSize}px`;
-        (el as HTMLElement).style.color = settings.fontColor;
-      });
-    });
-  };
+  //   nextTick(() => {
+  //     const elements = chapterBody.value!.querySelectorAll(
+  //       'h1, h2, h3, h4, h5, h6, p, div, span, a, li, ul, ol, label, input, button, .text'
+  //     );
+  //     elements.forEach((el) => {
+  //       (el as HTMLElement).style.fontSize = `${settings.fontSize}px`;
+  //       (el as HTMLElement).style.color = settings.fontColor;
+  //     });
+  //   });
+  // };
   
-  const applyTheme = () => {
-    if (chapterBody.value) {
-      chapterBody.value.style.backgroundColor = settings.backgroundColor;
-      chapterBody.value.style.filter = `brightness(${settings.brightness}%)`;
-    }
-  };
+  // const applyTheme = () => {
+  //   if (chapterBody.value) {
+  //     chapterBody.value.style.backgroundColor = settings.backgroundColor;
+  //     chapterBody.value.style.filter = `brightness(${settings.brightness}%)`;
+  //   }
+  // };
   
-  const handleFontSizeChange = (newFontVal: string) => {
-    settings.fontSize = parseInt(newFontVal);
-    // applyStylesToElements();
-  };
+  // const handleFontSizeChange = (newFontVal: string) => {
+  //   settings.fontSize = parseInt(newFontVal);
+  //   // applyStylesToElements();
+  // };
   
-  const handleBackgroundChange = (newBgVal: string) => {
-    settings.backgroundColor = newBgVal;
-    // applyTheme();
-  };
+  // const handleBackgroundChange = (newBgVal: string) => {
+  //   settings.backgroundColor = newBgVal;
+  //   // applyTheme();
+  // };
   
-  const handleBrightnessChange = (newBrightnessVal: string) => {
-    settings.brightness = newBrightnessVal;
-    // applyTheme();
-  };
+  // const handleBrightnessChange = (newBrightnessVal: string) => {
+  //   settings.brightness = newBrightnessVal;
+  //   // applyTheme();
+  // };
   
-  const handleFontColorChange = (newColor: string) => {
-    settings.fontColor = newColor;
-    // applyStylesToElements();
-  };
+  // const handleFontColorChange = (newColor: string) => {
+  //   settings.fontColor = newColor;
+  //   // applyStylesToElements();
+  // };
   
   const handleSummarize = () => {
     showSummarize.value = true;
@@ -295,42 +308,55 @@
   };
   
   const handleBookmark = async (newVal: boolean) => {
-    settings.isBookmarked = newVal;
     if (newVal) {
       await saveBookmark(parseInt(route.params.chapter_num as string));
+    }
+  };
+
+  const handleLastReadChapter = async (newVal: boolean) => {
+    if (newVal) {
+      await saveLastReadChapter(parseInt(route.params.chapter_num as string));
+    }
+  };
+
+  const saveLastReadChapter = async (newChapter: number) => {
+    try {
+      await $store.setLastReadChapter(parseInt(route.params.novel_id as string), newChapter);
+    } catch (e) {
+      console.error('Error saving last read chapter:', e);
     }
   };
   
   const saveBookmark = async (newChapter: number) => {
     try {
-      await $store.setBookmark(parseInt(route.params.novel_id as string), newChapter);
+      await $store.addBookmark(parseInt(route.params.novel_id as string), newChapter);
     } catch (e) {
       console.error('Error saving bookmark:', e);
     }
   };
   
-  watch(settings, async (newVal) => {
-    await $store.setReaderSettings(newVal);
-    // applyTheme();
-    // applyStylesToElements();
-  }, { deep: true });
+  // watch(settings, async (newVal) => {
+  //   await $store.setReaderSettings(newVal);
+  //   // applyTheme();
+  //   // applyStylesToElements();
+  // }, { deep: true });
 
-  applyTheme();
+  // applyTheme();
   
   onMounted(async () => {
     await Promise.all([fetchChapter(), fetchTotalChapters()]);
-    await saveBookmark(parseInt(route.params.chapter_num as string));
+    await saveLastReadChapter(parseInt(route.params.chapter_num as string));
   
     window.addEventListener('scroll', handleScroll);
     window.addEventListener('resize', updateIsMobile);
     loading.value = false;
   
-    nextTick(async () => {
-      const savedSettings = await $store.getReaderSettings();
-      Object.assign(settings, savedSettings);
-      // applyTheme();
-      // applyStylesToElements();
-    });
+    // nextTick(async () => {
+    //   const savedSettings = await $store.getReaderSettings();
+    //   Object.assign(settings, savedSettings);
+    //   // applyTheme();
+    //   // applyStylesToElements();
+    // });
   });
   
   onBeforeUnmount(() => {

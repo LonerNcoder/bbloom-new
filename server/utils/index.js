@@ -43,7 +43,7 @@ export async function verifyUser(event){
                     id: true,
                     username: true,
                     apiKey: true,
-                    library:true,
+                    libraries:true,
                     }
                 }
             }

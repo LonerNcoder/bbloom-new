@@ -14,7 +14,7 @@
               <NovelCoverImage :coverImage="novel.coverImage" :resetImage="resetImage" :title="novel.title" @update:image="resetCoverImg" />
               <!-- Novel Info -->
               <div class="flex-1">
-                <h1 class="text-2xl sm:text-3xl md:text-4xl text-[--primary-text-color] font-[500] mb-2 flex flex-row center gap-4 flex-wrap items-center">{{ novel.title }}<Pencil @click="openModal('title', 'Edit Title', 'title')" /></h1>
+                <h1 class="text-2xl sm:text-3xl md:text-4xl text-[--primary-text-color] font-[500] mb-2 flex flex-row center gap-4 flex-wrap items-center">{{ novel.title }}<Pencil @click="openModal('title', 'Edit Title', 'title')" /><Lock @click="toggleVisibility(novel.id, false)" v-if="novel.isPrivate"/><LockOpen @click="toggleVisibility(novel.id, true)" v-if="!novel.isPrivate" /></h1>
                 <h2 class="text-lg sm:text-xl text-[--author-name-text-color] mb-4 flex flex-row center gap-4 flex-wrap items-center">{{ novel.author }}<UserRoundPen @click="openModal('author', 'Edit Author', 'author')"/></h2>
                 <!-- <h1 class="text-2xl font-[500] mb-2">{{ novel.title }}</h1> -->
                 <h2 v-if="novel.originalTitle" class="text-lg text-[--primary-text-color] mb-4">{{ novel.originalTitle }}</h2>
@@ -585,7 +585,7 @@
   import { Container, Draggable } from 'vue3-smooth-dnd';
   import { ref, reactive, computed, onMounted, watch } from 'vue';
   import { useRoute, useRouter } from 'vue-router';
-  import { BookOpen, UserRoundPen,Tickets, Eye, Users, Star, StarOff, Pencil, FileX, Trash, Tags, Tag  } from 'lucide-vue-next';
+  import { BookOpen, UserRoundPen,Tickets, Eye, Users, Star, StarOff, Pencil, FileX, Trash, Tags, Tag, Lock, LockOpen } from 'lucide-vue-next';
 
   import { getSessionToken, getApiKey } from '../utils/utils';
   import LoadingAnimation from '~/components/LoadingAnimation.vue';
@@ -809,69 +809,28 @@
   
           return requestBody;
         }
-  
-  
-      // const submitModal = async() => {
-      //   if (modalType.value === "tags") {
-      //     if (JSON.stringify(initialTags.value) !== JSON.stringify(selectedTags.value)) {
-      //         // If tags have changed, update the tags field
-              
-      //         updateData.tags = selectedTags.value.map((tag) => ({ name: tag }));
-      //     } else {
-      //         closeModal();
-      //         return;
-      //     }
-      //   } else if(modalType.value === "genres"){
-      //     if (JSON.stringify(initialGenres.value) !== JSON.stringify(selectedGenres.value)) {
-      //         // If tags have changed, update the tags field
-              
-      //         updateData.genres = selectedGenres.value.map((genre) => ({ name: genre }));
-      //     } else {
-      //         closeModal();
-      //         return;
-      //     }
-      //   }
-      //   else {
-      //     const fieldMap = {
-      //       title: "title",     // Use the field name as the id
-      //       author: "author",
-      //       genres: "genres",
-      //       summary: "summary",
-      //       tags: "tags",        // This will map directly to the tags field
-      //       status: "status"
-      //     };
-      //     const field = fieldMap[modalType.value];
-      //     if (field) updateData[field] = modalInput.value;
-      //   }
-      //   // headers.value = await $store.getNormalHeaders()
-      //   const response = await $fetch(`${API}update/novel/${params.id}/`, {
-      //     method: 'PUT',
-      //     headers: headers.value,
-      //     body: JSON.stringify(updateData)
-      //   })
-  
-      //   if (response.statusCode === 200) {
-      //       novel.value = response.body;
-      //       novelData.value = response.body;
-      //   } else {
-      //     alert(response.message);
-      //   }
-        
-      //   closeModal();
-      // };
-  
-  
-      // const submitModal = () => {
-      //   if (modalType.value === "text" || modalType.value === "select") {
-      //     const field = modalType.value === "text" ? "title" : "genre";
-      //     novel.value[field] = modalInput.value;
-      //   } else if (modalType.value === "tags") {
-      //     novel.value.tags = selectedTags.value.map((tag) => ({ name: tag }));
-      //   }
-      //   closeModal();
-      // };
 
-      const submitModal = async () => {
+        /*
+        * toggle the visibility of the novel  
+        * @param {string} id - the id of the novel
+        * @param {boolean} private - the visibility of the novel
+        */
+        const toggleVisibility = async(id, make_private)=>{
+            const data = await $fetch(`${API}novel/${id}/visibility`,{
+              headers: headers.value,
+              method: "PUT",
+              body: JSON.stringify({
+                make_private: make_private
+              })
+            })
+            if(data.statusCode === 200){
+              novel.value.isPrivate = make_private
+            }
+
+        }
+        
+      
+  const submitModal = async () => {
   const requestBody = {};
 
   // Helper function to check if a field has changed
@@ -1084,7 +1043,7 @@
       onMounted(async() => {
         try{
           // default is 60000 ms cache
-          const data = await $fetchWithCache(`${API}metadata/novel/${params.id}`);
+          const data = await $fetchWithCache(`${API}metadata/novel/private/${params.id}`);
     
           
           if(data.statusCode != 200){

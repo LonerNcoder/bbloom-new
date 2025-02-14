@@ -71,7 +71,7 @@
                   </a>
                 </div>
                 <div class="novel-list horizontal">
-                  <NovelCard v-for="novelObj in library" :key="novelObj.id" :novel="novelObj" :to="`/novel/${novelObj.id}/chapter/${novelObj.bookmark.bookmarkedChapter}`" :name="novelObj.bookmark?.chapterNumber > 1 ? 'Continue Reading' : 'Start Reading'" />
+                  <NovelCard v-for="novelObj in library" :key="novelObj.novel.id" :novel="novelObj.novel" :to="`/novel/${novelObj.novel.id}/chapter/${novelObj.bookmarks?.[0]?.chapter || 1}`" :name="novelObj.bookmarks?.[0]?.chapter > 1 ? 'Continue Reading' : 'Start Reading'" />
                 </div>
               </section>
             </div>
@@ -85,7 +85,7 @@
                   </a>
                 </div>
                 <div class="novel-list horizontal">
-                  <NovelCard v-for="novelObj in library" :key="novelObj.id" :novel="novelObj" :to="`/novel/${novelObj.id}/chapter/${novelObj.bookmark.chapterNumber}`" />
+                  <NovelCard v-for="novelObj in library.novel" :key="novelObj.id" :novel="novelObj" :to="`/novel/${novelObj.id}/chapter/${novelObj.bookmarks?.[0]?.chapter || 1}`" />
                 </div>
               </section>
             </div>
@@ -101,7 +101,7 @@
           <section class="novels-ranking" v-if="library">
             <h2>{{ 'Novels Ranking'}}</h2>
             <div class="novel-list vertical-list">
-              <NovelCard v-for="novelObj in library" :key="novelObj.id" :novel="novelObj" :to="`/novel/${novelObj.id}/chapter/${novelObj.bookmark.chapterNumber}`" />
+              <NovelCard v-for="novelObj in library.novel" :key="novelObj.id" :novel="novelObj" :to="`/novel/${novelObj.id}/chapter/${novelObj.bookmarks?.[0]?.chapter || 1}`" />
 
             </div>
             <button @click="viewMore('novelsRanking')">{{ 'viewMore'}}</button>
@@ -110,8 +110,7 @@
           <section class="random-novels" v-if="library">
             <h2>{{ 'Random Novels'}}</h2>
             <div class="novel-list vertical-list">
-              <NovelCard v-for="novelObj in library" :key="novelObj.id" :novel="novelObj" :to="`/novel/${novelObj.id}/chapter/${novelObj.bookmark.chapterNumber}`" />
-
+                <NovelCard v-for="novelObj in library.novel" :key="novelObj.id" :novel="novelObj" :to="`/novel/${novelObj.id}/chapter/${novelObj.bookmarks?.[0]?.chapter || 1}`" />
             </div>
           </section>
         </div>
@@ -153,10 +152,10 @@ const {data, error} = useSmartFetch(`${API}user/${userId}/library`,{
       method: "GET",
       headers:headers
 })
-
-const library = computed(() => data.value?.body.libraryNovels || [])
+const library = computed(() => data.value?.libraries || [])
 onMounted(async () => {
   loading.value = false;
+  console.log(library.value.map(item => item.novel))
 });
 
 </script>

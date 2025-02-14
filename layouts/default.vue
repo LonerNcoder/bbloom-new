@@ -29,7 +29,7 @@
                               {{ 'home'}}
                           </NuxtLink>
                           <NuxtLink 
-                              v-if="isLoggedIn" 
+                              v-if="user.loggedIn" 
                               to="/write" 
                               :class="[
                                   'nav-link',
@@ -39,7 +39,7 @@
                               {{ 'write'}}
                           </NuxtLink>
                           <NuxtLink 
-                              v-if="isLoggedIn" 
+                              v-if="user.loggedIn" 
                               to="/library" 
                               :class="[
                                   'nav-link',
@@ -98,14 +98,14 @@
 
 
                       <!-- Profile/Login Button -->
-                      <div v-if="isLoggedIn">
+                      <div v-if="user.loggedIn">
                           <button 
                               @click="toggleProfileModal"
                               class="flex items-center px-4 py-2 rounded-full bg-[--btn-color-4] text-[--btn-text-color]
                               hover:bg-[--btn-color-3]
                               transition-colors duration-300 button-text"
                           >
-                              {{ username }}
+                              {{ user.username }}
                           </button>
                       </div>
                       <div v-else>
@@ -165,7 +165,7 @@
                           {{ 'home' }}
                       </NuxtLink>
                       <NuxtLink 
-                          v-if="isLoggedIn" 
+                          v-if="user.loggedIn" 
                           to="/write" 
                           :class="[
                               'mobile-nav-link',
@@ -175,7 +175,7 @@
                           {{ 'write' }}
                       </NuxtLink>
                       <NuxtLink 
-                          v-if="isLoggedIn" 
+                          v-if="user.loggedIn" 
                           to="/library" 
                           :class="[
                               'mobile-nav-link',
@@ -212,7 +212,7 @@
       <div v-if="isProfileModalOpen" class="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center">
           <div class="bg-white dark:bg-gray-800 rounded-lg shadow-xl p-6 m-4 max-w-sm w-full transition-colors duration-300">
               <h3 class="text-xl font-semibold mb-4 dark:text-white">Profile Settings</h3>
-              <p class="mb-4 dark:text-gray-300">Username: {{ username }}</p>
+              <p class="mb-4 dark:text-gray-300">Username: {{ user.username }}</p>
               <div class="flex flex-col space-y-3">
                   <button 
                       @click="logout"
@@ -254,9 +254,7 @@ const searchQuery = ref('');
 const locale = ref("")
 const selectedWebMode = ref('en');
 const dbName = 'client-db';
-const storeName = 'account-settings';
-const username = ref("anon");
-const isLoggedIn = ref(false);
+const user = useUserStore();
 const isMenuOpen = ref(false);
 const isProfileModalOpen = ref(false);
 const isDarkMode = ref(false);
@@ -324,7 +322,7 @@ onMounted(async () => {
               //         store.put({ id: 'user',
               //             value: {
               //                 id: "",
-              //                 username: "anon",
+              //                 user.username: "anon",
               //                 image: "",
               //                 sessionToken: "",
               //                 accessToken: "",
@@ -346,10 +344,6 @@ onMounted(async () => {
               if (storedWebMode) {
                   selectedWebMode.value = storedWebMode;
                   locale.value = storedWebMode;
-              }
-              if (storedUser && storedUser.loggedIn && storedUser.username) {
-                  username.value = storedUser.username;
-                  isLoggedIn.value = true;
               }
 
               // db.close();
@@ -373,8 +367,6 @@ onMounted(async () => {
       };
 
       const logout = () => {
-          username.value = "anon";
-          isLoggedIn.value = false;
           isProfileModalOpen.value = false;
       };
 

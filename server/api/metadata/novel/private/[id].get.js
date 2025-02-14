@@ -12,34 +12,32 @@ export default defineEventHandler(async (event) => {
       throw createError({ statusCode: 400, statusMessage: 'Invalid novel ID' });
     }
     // Fetch novel with required relations
-    const novel = await prisma.novel.findUnique({
-      where: { id: novel_id, isPrivate: false },
-      include: {
-        tags: true,
-        genres: true,
-        language: true
-      }
-    });
-
-    if (!novel) {
-      throw createError({ statusCode: 404, statusMessage: 'Novel not found' });
-    }
-
-    let libraryData = null;
+    var novel = null;
     const isVerified = await verifyUser(event);
+    if(!isVerified) {
+      throw createError({ statusCode: 401, statusMessage: 'Unauthorized' });
+    }
+    let libraryData = null;
     let readingHistory = null;
     let bookmark = null;
     
     if (isVerified && event.context.session) {
       console.log(event.context.session.user);
       const userId = event.context.session.user.id;
-      
+      novel = await prisma.novel.findUnique({
+        where: { id: novel_id, AND: [ {OR: [{isPrivate: true}, {isPrivate: false}]}, {OR: [{uploaderId: userId}, {authorId: userId}]}] },
+        include: {
+          tags: true,
+          genres: true,
+          language: true
+        }
+      });
+      if (!novel) {
+        throw createError({ statusCode: 404, statusMessage: 'Novel not found' });
+      }
       // user has multiple libraries. we need to get all of them and then check if novel is in any of them  
       const libraries = await prisma.library.findMany({
-        where: { userId },
-        include: {
-          libraryNovels: true
-        }
+        where: { userId }
       });
 
       // Check if novel exists in any of the libraries, check for edge cases where libraryNovels is empty or null 

@@ -87,6 +87,9 @@ Now, proceed with the analysis.
     }
   ])
 
+  //delete the file from the file manager given  the id
+  await fileManager.deleteFile(uploadResult.file.name)
+
   // Return the result from the Gemini API
   return {result: result.response.text()}
 })

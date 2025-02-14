@@ -43,8 +43,8 @@ export default defineEventHandler(async (event) => {
 
     return { novels };
   } catch (error) {
-    console.error('Error fetching novels:', error);
-    throw createError({ statusCode: 500, statusMessage: 'Failed to fetch novels' });
+
+    throw createError({ statusCode: 500, statusMessage: "Bad Request", message: "no novels found" });
   } finally {
     await prisma.$disconnect();
   }

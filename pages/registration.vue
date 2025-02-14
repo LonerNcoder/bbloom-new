@@ -125,7 +125,7 @@
   definePageMeta({
     layout: 'login',
   })
-  
+  const API = useRuntimeConfig().public.baseSafeAPI
   const router = useRouter()
   const username = ref('')
   const password = ref('')
@@ -204,7 +204,7 @@
       isLoading.value = true
       
       // API call to create account
-      const response = await fetch('${API}register', {
+      const response = await fetch(`${API}register`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

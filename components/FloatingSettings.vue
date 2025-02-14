@@ -32,7 +32,7 @@
                   <Palette class="w-4 h-4" />
                   Background Color
               </label>
-              <input type="color"  v-model="currentBackgroundColor" :style="{ filter: $colorMode.preference === 'dark' ? 'invert(1)' : 'none' }" class="w-full h-8 rounded cursor-pointer" />
+              <input type="color"  v-model="readerStore.backgroundColor" :style="{ filter: $colorMode.preference === 'dark' ? 'invert(1)' : 'none' }" class="w-full h-8 rounded cursor-pointer" />
           </div>
 
           <!-- Font Color -->
@@ -41,25 +41,25 @@
                   <Palette class="w-4 h-4" />
                   Font Color
               </label>
-              <input type="color" v-model="currentFontColor" :style="{ filter: $colorMode.preference === 'dark' ? 'invert(1)' : 'none' }" class="w-full h-8 rounded cursor-pointer" />
+              <input type="color" v-model="readerStore.fontColor" :style="{ filter: $colorMode.preference === 'dark' ? 'invert(1)' : 'none' }" class="w-full h-8 rounded cursor-pointer" />
           </div>
 
           <!-- Font Size -->
           <div class="space-y-2">
               <label class="flex items-center gap-2 text-sm font-medium">
                   <Type class="w-4 h-4" />
-                  Font Size ({{ currentFontSize }}px)
+                  Font Size ({{ readerStore.fontSize }}px)
               </label>
-              <input type="range" min="10" max="30" step="1" v-model="currentFontSize" class="w-full" />
+              <input type="range" min="10" max="40" step="2" v-model="readerStore.fontSize" class="w-full" />
           </div>
 
           <!-- Brightness -->
           <div class="space-y-2">
               <label class="flex items-center gap-2 text-sm font-medium">
                   <Sun class="w-4 h-4" />
-                  Brightness ({{ currentBrightness }}%)
+                  Brightness ({{ readerStore.brightness }}%)
               </label>
-              <input type="range" min="60" step="10" max="150" v-model="currentBrightness" class="w-full" />
+              <input type="range" min="60" step="10" max="150" v-model="readerStore.brightness" class="w-full" />
           </div>
 
           <!-- Gesture Toggle -->
@@ -67,7 +67,7 @@
               Gesture Control
               <Hand class="w-4 h-4" />
               <label class="relative inline-flex items-center cursor-pointer">
-                  <input type="checkbox" v-model="isGestureEnabled" class="sr-only peer">
+                  <input type="checkbox" v-model="readerStore.gestureEnabled" class="sr-only peer">
                   <div
                       class="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600"
                   ></div>
@@ -96,33 +96,29 @@ import { ref, reactive, onMounted, onBeforeUnmount, watch, computed, type CSSPro
 import { Settings, Type, Sun, Bookmark, FileText, Palette, Hand } from 'lucide-vue-next';
 
 interface FloatingSettingsProps {
-  fontsize: number;
-  backgroundColor: string;
-  brightness: number;
   bookmark: boolean;
-  isMobile: boolean;
-  isButtonVisible: boolean;
-  gestureEnabled: boolean;
-  fontColor: string; // Add fontColor prop
 }
 const props = defineProps<FloatingSettingsProps>();
-
-const currentFontSize = ref(props.fontsize);
-const currentBackgroundColor = ref(props.backgroundColor);
-const currentBrightness = ref(props.brightness);
+const readerStore = useReaderStore()
+// const currentFontSize = ref(readerStore.fontSize);
+// const currentBackgroundColor = ref(readerStore.backgroundColor);
+// const currentBrightness = ref(readerStore.brightness);
+// const bookmarked = ref(readerStore.isBookmarked);
 const bookmarked = ref(props.bookmark);
-const isGestureEnabled = ref(props.gestureEnabled);
+console.log(bookmarked.value)
+// const isGestureEnabled = ref(readerStore.gestureEnabled);
 const isMobile = ref(window.innerWidth <= 768);
-const currentFontColor = ref(props.fontColor || '#000000'); // Default to black if not provided
+// const currentFontColor = ref(readerStore.fontColor || '#000000'); // Default to black if not provided
 
-const emit = defineEmits(['bookmark', 'summarize', 'fontsizeChanged', 'brightnessChanged', 'backgroundChanged', 'gesture', 'fontColorChanged']); // Add fontColorChanged
+const emit = defineEmits(['bookmark', 'summarize']); // Add fontColorChanged
 
-watch(currentFontSize, (newValue) => emit('fontsizeChanged', newValue));
-watch(currentBrightness, (newValue) => emit('brightnessChanged', newValue));
-watch(currentBackgroundColor, (newValue) => emit('backgroundChanged', newValue));
-watch(bookmarked, (newValue) => emit('bookmark', newValue));
-watch(isGestureEnabled, (newValue) => emit('gesture', newValue));
-watch(currentFontColor, (newValue) => emit('fontColorChanged', newValue)); // Emit font color changes
+// watch(currentFontSize, (newValue) => readerStore.setFontSize(newValue));
+// watch(currentBrightness, (newValue) => readerStore.setBrightness(newValue));
+// watch(currentBackgroundColor, (newValue) => readerStore.setBackgroundColor(newValue));
+// watch(bookmarked, (newValue) => readerStore.setIsBookmarked(newValue));
+// watch(isGestureEnabled, (newValue) => readerStore.setGestureEnabled(newValue));
+// watch(currentFontColor, (newValue) => readerStore.setFontColor(newValue)); // Emit font color changes
+
 
 const { $colorMode } = useNuxtApp();
 // New state for mobile expansion
@@ -133,7 +129,8 @@ const buttonRef = ref<HTMLElement | null>(null);
 const panelRef = ref<HTMLElement | null>(null);
 const isOpen = ref(false);
 const isDragging = ref(false);
-const isButtonVisible = ref(props.isButtonVisible);
+
+
 
 // Helper function to invert a hex color
 function invertColor(hex: string): string {
@@ -155,39 +152,39 @@ function invertColor(hex: string): string {
 
 const effectiveBackgroundColor = computed(() => {
   return $colorMode.preference === 'dark'
-    ? invertColor(currentBackgroundColor.value)
-    : currentBackgroundColor.value
+    ? invertColor(readerStore.backgroundColor)
+    : readerStore.backgroundColor
 })
 
 const effectiveFontColor = computed(() => {
   return $colorMode.preference === 'dark'
-    ? invertColor(currentFontColor.value)
-    : currentFontColor.value
+    ? invertColor(readerStore.fontColor)
+    : readerStore.fontColor
 })
 
 watch(effectiveBackgroundColor, (newVal) => {
   // Do something with the new background color if needed
-  emit('backgroundChanged', newVal)
+  readerStore.setBackgroundColor(newVal)
 })
 watch(effectiveFontColor, (newVal) => {
   // Do something with the new font color if needed
-  emit('fontColorChanged', newVal)
+  readerStore.setFontColor(newVal)
 })
 // Position state
 const position = reactive({ x: 0, y: 0 });
 
-const initializePosition = () => {
+const initializePosition = async () => {
   const storageKey = isMobile.value
       ? 'mobile_pos_floatingButtonPosition'
       : 'floatingButtonPosition';
 
-  const savedPosition = localStorage.getItem(storageKey);
+  const savedPosition = readerStore.getFloatingButtonPosition(storageKey);
+  console.log(savedPosition)
 
   if (savedPosition) {
       try {
-          const parsedPosition = JSON.parse(savedPosition);
-          position.x = parsedPosition.x;
-          position.y = parsedPosition.y;
+          position.x = savedPosition.x;
+          position.y = savedPosition.y;
       } catch (error) {
           if (isMobile.value) {
               const btnWidth = 56;
@@ -220,7 +217,7 @@ const buttonStyle = computed(() => {
           top: position.y + 'px',
           zIndex: 50000,
           touchAction: 'none',
-          opacity: isButtonVisible.value ? 1 : 0,
+          opacity: readerStore.isButtonVisible ? 1 : 0,
           transition: 'left 0.3s'
       };
   } else {
@@ -230,7 +227,7 @@ const buttonStyle = computed(() => {
           top: position.y + 'px',
           zIndex: 50000,
           touchAction: 'none',
-          opacity: isButtonVisible.value ? 1 : 0
+          opacity: readerStore.isButtonVisible ? 1 : 0
       };
   }
 });
@@ -353,7 +350,7 @@ const handleDrag = (event: PointerEvent) => {
   }
 };
 
-const stopDragging = () => {
+const stopDragging = async () => {
   isDragging.value = false;
   dragState.isDragging = false;
   dragStarted = false;
@@ -375,11 +372,7 @@ const stopDragging = () => {
   const storageKey = isMobile.value
       ? 'mobile_pos_floatingButtonPosition'
       : 'floatingButtonPosition';
-
-  localStorage.setItem(storageKey, JSON.stringify({
-      x: position.x,
-      y: position.y
-  }));
+  await readerStore.setFloatingButtonPosition(storageKey, {x: position.x, y: position.y})
 };
 
 const togglePanel = () => {
@@ -424,7 +417,7 @@ watch([() => position.x, () => position.y], () => {
   }
 });
 
-watch(() => props.isMobile, (newVal) => {
+watch(() => isMobile, (newVal) => {
   initializePosition();
 });
 

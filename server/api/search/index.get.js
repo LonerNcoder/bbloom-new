@@ -138,27 +138,36 @@ export default defineEventHandler(async (event) => {
     // Get library data AND bookmarks for authenticated users
     let libraryMap = {};
     let userBookmarkMap = {}; // New: For non-library bookmarks
+    let readingHistoryMap = {};
 
     const isVerified = await verifyUser(event);
 
 
     if (isVerified && event.context.session?.user) {
       const userId = event.context.session.user.id;
-      const library = event.context.session.user.library;
 
+      // get all libraries for the user
+      const libraries = await prisma.library.findMany({
+        where: { userId }
+      });
 
       // // Get both library novels AND user bookmarks in parallel
-      const [libraryNovels, userBookmarks] = await Promise.all([
+      const [libraryNovels, userBookmarks, readingHistory] = await Promise.all([
         // Existing library query
         prisma.libraryNovel.findMany({
           where: {
-            libraryId: library.id,
+            libraryId: { in: libraries.map(l => l.id) },
             novelId: { in: novels.map(n => n.id) }
           }
         }),
-
         // NEW: Get bookmarks for novels not in library
-        prisma.userBookmark.findMany({
+        prisma.novelBookmark.findMany({
+          where: {
+            userId,
+            novelId: { in: novels.map(n => n.id) }
+          }
+        }),
+        prisma.readingHistory.findMany({
           where: {
             userId,
             novelId: { in: novels.map(n => n.id) }
@@ -175,7 +184,12 @@ export default defineEventHandler(async (event) => {
 
       userBookmarkMap = userBookmarks.reduce((acc, ub) => ({
         ...acc,
-        [ub.NovelId]: ub
+        [ub.novelId]: ub
+      }), {});
+
+      readingHistoryMap = readingHistory.reduce((acc, rh) => ({
+        ...acc,
+        [rh.novelId]: rh
       }), {});
     }
 
@@ -187,14 +201,8 @@ export default defineEventHandler(async (event) => {
       return {
         ...novel,
         inLibrary: !!libraryData,
-        bookmark: (libraryData || bookmarkData) ? {
-          // Prefer library data if exists, else use bookmark data
-          bookmarkedChapter: libraryData?.bookmarkedChapter ?? bookmarkData?.lastReadChapter,
-          lastReadChapter: libraryData?.lastReadChapter ?? bookmarkData?.lastReadChapter,
-          maxChapterRead: libraryData?.maxChapterRead ?? bookmarkData?.maxChapterRead,
-          progressPercent: ((libraryData?.maxChapterRead ?? bookmarkData?.maxChapterRead ?? 0) / novel.chapters * 100).toFixed(1),
-          lastVisited: libraryData?.lastVisitedAt ?? bookmarkData?.lastVisitedAt
-        } : null
+        bookmark: bookmarkData,
+        readingHistory: readingHistoryMap[novel.id]
       };
     });
 

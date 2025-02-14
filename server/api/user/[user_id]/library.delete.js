@@ -12,91 +12,39 @@ export default defineEventHandler(async (event) => {
     }
 
     const user = event.context.session.user;
-    
-    try {
-        // 1. Ensure user has a library
-        const library = await prisma.library.findUnique({
-            where: { userId: user.id }
-        });
-        var delete_flag=0
-
-        if (!library) {
-            return createError({ 
-                statusCode: 404, 
-                message: "Library not found" 
-            });
+    const libraries = await prisma.library.findMany({
+        where: {
+            userId: user.id
+        },
+        include: {
+            libraryNovels: true
         }
-
-        // 2. Check for existing library entry
-        const existingEntry = await prisma.libraryNovel.findFirst({
-            where: {
+    });
+    //find the library that contains the novel_id
+    const library = libraries.find(library => library.libraryNovels.some(novel => novel.novelId === novel_id));
+    //if the library is not found, return an error
+    if (!library) {
+        return createError({ statusCode: 404, message: "Library not found" });
+    }
+    //delete the novel from the library
+    await prisma.libraryNovel.delete({
+        where: {
+            libraryId_novelId: {
                 libraryId: library.id,
-                novelId: parseInt(novel_id)
+                novelId: novel_id
             }
-        });
-
-        if (!existingEntry) {
-            return createError({ 
-                statusCode: 404, 
-                message: "Novel not found in library" 
-            });
         }
+    });
 
-        // 3. Create user bookmark and delete library entry in transaction
-        const userBookmark = await prisma.$transaction(async (tx) => {
-            // Create user bookmark with library data
-            const newBookmark = await tx.userBookmark.upsert({
-                where: {
-                    userId_novelId: {
-                        userId: user.id,
-                        novelId: parseInt(novel_id),
-                    },
-                },
-                create: {
-                    userId: user.id,
-                    novelId: parseInt(novel_id),
-                    lastReadChapter: existingEntry.lastReadChapter,
-                    maxChapterRead: existingEntry.maxChapterRead,
-                    bookmarkedChapter: existingEntry.bookmarkedChapter, // Add bookmarkedChapter
-                    lastVisitedAt: new Date(),
-                },
-                update: {
-                    lastReadChapter: existingEntry.lastReadChapter,
-                    maxChapterRead: existingEntry.maxChapterRead,
-                    bookmarkedChapter: existingEntry.bookmarkedChapter, // Add bookmarkedChapter
-                    lastVisitedAt: new Date(),
-                },
-            });
-
-            delete_flag=1
-
-            return newBookmark;
-        }, { timeout: 10000 }); // Set transaction timeout to 10 seconds
-
-        if(delete_flag){
-          // Delete library entry
-          await prisma.libraryNovel.delete({
-            where: {
-              id: existingEntry.id,
-              novelId: existingEntry.novelId,
-            },
-          });
-        }
-
-
-        return {
-            statusCode: 200,
-            body: {
-                novelId: parseInt(novel_id),
-                bookmark: userBookmark,
-                inLibrary: false
-            }
-        };
-
-    } catch (e) {
-        return createError({ 
-            statusCode: 500, 
-            message: `Server error: ${e.message}` 
-        });
+    //return the user's all libraries removing the deleted novel , use previous variable libraries
+    const updatedLibraries = libraries.filter(library => library.libraryNovels.some(novel => novel.novelId !== novel_id));
+    
+    return {
+        statusCode: 200,
+        body: {
+            novelId: parseInt(novel_id),
+            inLibrary: false
+        },
+        libraries: updatedLibraries
     }
 });

@@ -62,7 +62,7 @@
         </button>
         <AvatarRoot>
           <AvatarImage :src="imageSrc" />
-          <AvatarFallback>{{ username.charAt(0) }}</AvatarFallback>
+          <AvatarFallback>{{ user.username.charAt(0) }}</AvatarFallback>
         </AvatarRoot>
       </div>
     </nav>
@@ -554,8 +554,7 @@ const novel_id = parseInt(route.params.novel_id);
 //user state
 const dbName = 'client-db';
 const storeName = 'account-settings';
-const username = ref("anon"); // Make username reactive
-const userLoggedIn = ref(false);
+const user = useUserStore()
 const imageSrc = ref("")
 const showAI = ref(false)
 // State
@@ -600,7 +599,6 @@ const shortCutKeyPressed = ref(false)
 const shortCutModalX = ref(0)
 const shortCutModalY = ref(0)
 const currentEditorCursor = ref(null)
-const user = ref(null)
 var atSymbolCount = 0
 var lastKeyWasAt = false
 var lastAtTime = 0
@@ -1099,10 +1097,7 @@ const toggleAI = () =>{
 const isExpanded = ref(false) // Controls mobile FAB expansion
 
 onMounted(async () => {
-            user.value = await $store.getUserData()
             imageSrc.value = `${useRuntimeConfig().public.imageUrl}/${user.image}`
-            username.value = await $store.getUsername();
-            userLoggedIn.value = await $store.isLoggedIn();
             headers.value = await $store.getNormalHeaders();
 
             // await load_editor();

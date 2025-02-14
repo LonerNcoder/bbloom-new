@@ -55,5 +55,8 @@ export const useUserStore = defineStore('user', {
     setLoggedIn(status) {
       this.loggedIn = status
     }
+  },
+  persist: {
+    storage: localStorage,
   }
 })

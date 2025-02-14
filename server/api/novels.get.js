@@ -72,43 +72,39 @@ export default defineEventHandler(async (event) => {
     // Get library data for authenticated users
     let libraryMap = {};
     const isVerified = await verifyUser(event);
-    console.log(isVerified)
     
     if (isVerified && event.context.session?.user) {
       const userId = event.context.session.user.id;
 
       // Get user's library
-      const library = event.context.session.user.library
+      const libraries = event.context.session.user.libraries
 
       // Get library novels for these novels
       const libraryNovels = await prisma.libraryNovel.findMany({
         where: {
-          libraryId: library.id,
+          libraryId: { in: libraries.map(l => l.id) },
           novelId: { in: novels.map(n => n.id) }
+        },
+        select: {
+          id: true,
+          novelId: true,
         }
       });
-      console.log(libraryNovels)
+
 
       // Create lookup map
       libraryMap = libraryNovels.reduce((acc, ln) => ({
         ...acc,
         [ln.novelId]: ln
       }), {});
+
+
     }
 
     // Enhance novels with library data
     const enhancedNovels = novels.map(novel => ({
       ...novel,
       inLibrary: !!libraryMap[novel.id],
-      bookmark: libraryMap[novel.id] ? {
-        bookmarkedChapter: libraryMap[novel.id].bookmarkedChapter,
-        lastReadChapter: libraryMap[novel.id].lastReadChapter,
-        maxChapterRead: libraryMap[novel.id].maxChapterRead,
-        progressPercent: libraryMap[novel.id].maxChapterRead > 0 
-          ? ((libraryMap[novel.id].maxChapterRead / novel.chapters) * 100).toFixed(1)
-          : '0.0',
-        lastVisited: libraryMap[novel.id].lastVisitedAt
-      } : null
     }));
 
     // Pagination calculations

@@ -61,19 +61,23 @@
                   <span class="text-gray-500">({{ novel.reviewCount || 1}} reviews)</span>
                 </div>
                 <div class="flex flex-wrap gap-3">
-                    <button v-if="bookmark" @click="goToChapter(bookmark.bookmarkedChapter)" class="px-6 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 text-sm sm:text-base md:text-lg sm:px-4 md:px-6">
+                    <button v-if="lastReadChapter > 1" @click="goToChapter(lastReadChapter)" class="px-6 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 text-sm sm:text-base md:text-lg sm:px-4 md:px-6">
                         Continue Reading
                         </button>
                         <button v-else  @click="goToChapter(1)" class="px-6 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 text-sm sm:text-base md:text-lg sm:px-4 md:px-6">
                         Start Reading
                         </button>
 
-                        <button v-if="!inLibrary && loggedIn" @click="addToLibrary(novel.id)" class="px-6 py-2 border  bg-[--btn-color-4] text-[--btn-text-color] rounded-md ">
-                        Add to Library
-                        </button>
-                        <button v-if="inLibrary && loggedIn" @click="removeFromLibrary(novel.id)" class="px-6 py-2 border  bg-[--btn-color-4] text-[--btn-text-color] rounded-md ">
-                          Remove
-                        </button>
+                        <div v-if="user.loggedIn">
+                          <!-- Show Add button if the novel is not in the library -->
+                          <button v-if="inLibrary === false" @click="addToLibrary(novel.id)" class="px-6 py-2 border bg-[--btn-color-4] text-[--btn-text-color] rounded-md">
+                            Add to Library
+                          </button>
+                          <!-- Show Remove button if the novel is in the library -->
+                          <button v-if="inLibrary === true" @click="removeFromLibrary(novel.id)" class="px-6 py-2 border bg-[--btn-color-4] text-[--btn-text-color] rounded-md">
+                            Remove
+                          </button>
+                        </div>
                   </div>
                <!-- Management Buttons -->
 
@@ -312,15 +316,14 @@ import { storeToRefs } from 'pinia';
       const params = useRoute().params;
       const router = useRouter();
       const { $store, $fetchWithCache } = useNuxtApp();
-      const userStore = useUserStore()
-      const {loggedIn} = storeToRefs(userStore)
-      console.log(loggedIn.value)
-      const webMode = ref(await $store.getWebMode())
+      const user = useUserStore()
+      const {loggedIn} = storeToRefs(user)
+      const webModeStore = useWebModeStore()
       var API;
       const config = useRuntimeConfig().public
-      if(webMode.value === "Safe"){
+      if( webModeStore.webMode === "Safe"){
         API = config.baseSafeAPI
-      }else if(webMode.value === "Pirate"){
+      }else if(webModeStore.webMode === "Pirate"){
         API = config.basePriateAPI
       }else{
         API = config.baseSafeAPI
@@ -328,7 +331,7 @@ import { storeToRefs } from 'pinia';
       const headers = ref(await $store.getNormalHeaders())
       const isLatestDisabled = ref(false);
       const isFirstDisabled = ref(true);
-      // const inLibrary = ref(false)
+      const inLibrary = ref(false)
       const bookmark = ref(null);
       const activeTab = ref('about');
       const tabs = [
@@ -364,33 +367,7 @@ import { storeToRefs } from 'pinia';
         router.push(path)
       };
   
-      // const novel = ref(null);
-      // const fetchChapters = async(page = 1, limit = 20) => {
-      //   try {
-      //     headers.value = await $store.getNormalHeaders();
-      //     const data = await $fetch(`${API}novels/${params.id}`,{
-      //       headers:headers.value,
-      //       params:{
-      //         page,
-      //         limit,
-      //         query:"pub"
-      //       }
-      //     });
-      //     if (data.statusCode === 200) {
-      //       currentChapters.value = data.body.chapters;
-      //       pagination.value = {
-      //         totalItems: data.body.pagination.totalItems,
-      //         totalPages: data.body.pagination.totalPages,
-      //         currentPage: data.body.pagination.currentPage,
-      //         pageSize: data.body.pagination.pageSize,
-      //       };
-      //     } else {
-      //       console.error(data.message);
-      //     }
-      //   } catch (error) {
-      //     console.error('Error fetching chapters:', error);
-      //   }
-      // };
+   
       const fetchChapters = async(page = 1, limit = 20) => {
         try {
           const data = await $fetchWithCache(`${API}novels/${params.id}`,{
@@ -451,18 +428,32 @@ const {data, pending, error} = useSmartFetch(`${API}metadata/novel/${params.id}`
 const novel = computed(()=>{
   return data.value?.body.novel
 })
-const inLibrary = computed(()=>{
-  return data.value?.body.inLibrary
+watch(data, (newData) => {
+  if (newData && newData.body) {
+    // Update our mutable library state with the value from the backend
+    inLibrary.value = newData.body.inLibrary
+  }
 })
-const backendBookmark = computed(()=>{
-  return data.value?.body.bookmark
+
+const backendBookmarks = computed(()=>{
+  return data.value?.body.bookmarks
+})
+const readingHistory = computed(()=>{
+  return data.value?.body.readingHistory
 })
 //if book is not stored in library bookmark wil be null. so in this case localforage will supply us with bookmarkchapter
-const bookmark_num = await $store.getBookmark(params.id);
+const bookmark_num = await $store.getLastReadChapter(parseInt(params.id));
 const cached_num_of_chapters = await $store.getNumberOfChapters(params.id);
-if (!backendBookmark.value) {
+const lastReadChapter = computed(()=>{
+  if(readingHistory.value){
+    return Math.max(bookmark_num, readingHistory.value?.lastReadChapter)
+  }else{
+    return bookmark_num
+  }
+})  
+if (!backendBookmarks.value) {
   bookmark.value = {
-    bookmarkedChapter: parseInt(bookmark_num),
+    bookmarkedChapters: await $store.getBookmarks(parseInt(params.id)),
     lastReadChapter: parseInt(bookmark_num)
   }
 }
@@ -564,7 +555,6 @@ watch(pending, (newPending) => {
             body: JSON.stringify({novel_id: novel_id})
         })
         inLibrary.value = data.body.inLibrary
-        bookmark.value = data.body.bookmark
       }
 
       const showAllChapters = async () => {
