@@ -6,7 +6,7 @@
         <div class="novel-summary">
           <h4>Summary</h4>
           <p>{{ novel.summary }}</p>
-          <NuxtLink :to="to" class="read-button">
+          <NuxtLink :to="chapterLink" class="read-button">
             {{ name }}
             <svg class="arrow-icon" viewBox="0 0 24 24" width="24" height="24">
               <path fill="currentColor" d="M12 4l-1.41 1.41L16.17 11H4v2h12.17l-5.58 5.59L12 20l8-8z"/>
@@ -32,9 +32,9 @@
                         <div v-show="isExpanded" class="novel-summary">
                           <h4>Summary</h4>
                           <p>{{ novel.summary }}</p>
-                                  <NuxtLink :to="to" class="read-button">
-                                    {{ name }}
-                                    <svg class="arrow-icon" viewBox="0 0 24 24" width="24" height="24">
+                          <NuxtLink :to="chapterLink" class="read-button">
+                            {{ name }}
+                            <svg class="arrow-icon" viewBox="0 0 24 24" width="24" height="24">
                                       <path fill="currentColor" d="M12 4l-1.41 1.41L16.17 11H4v2h12.17l-5.58 5.59L12 20l8-8z"/>
                                     </svg>
                                   </NuxtLink>
@@ -50,10 +50,11 @@ import { ref, onMounted, defineProps, onBeforeUnmount } from 'vue';
 
 const props = defineProps({
   novel: { type: Object, required: true },
-  to: { type: String, required: true },
+  to: { type: String, default: "" },
   name: { type: String, default: 'Start Reading' },
   bgcolor: { type: Number, default: 2 },
   webMode: { type: String, default: 'safe' },
+  lastReadChapter: { type: Number, default: 1 },
 });
 
 
@@ -68,6 +69,14 @@ const cardAnim = () => {
 const handleResize = () => {
   isSmallScreen.value = window.innerWidth < 600;
 };
+
+const chapterLink = computed(() => {
+  //if to is empty, return the last read chapter  
+  if (props.to === "") {
+    return `/novel/${props.novel.id}/chapter/${props.lastReadChapter}`;
+  }
+  return props.to;
+});
 
 onMounted(() => {
   defaultImage.value = props.novel.coverImage || 'https://ik.imagekit.io/escbl5qkx/default_novel_cover_75.png';

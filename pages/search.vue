@@ -52,6 +52,7 @@ import { ref, computed, onMounted, watch } from 'vue';
 import { useNuxtApp } from '#app';
 import SearchLayout from '~/components/SearchLayout.vue';
 import { useSmartFetch } from '~/composables/useSmartFetch';
+import { routerKey } from 'vue-router';
 const route = useRoute();
 const { $store } = useNuxtApp();
 const webMode = ref(await $store.getWebMode())
@@ -69,14 +70,13 @@ const genres = ref(route.query.genres?.split(',') || []); // Handle array conver
 const tags = ref(route.query.tags?.split(',') || []);
 const type = ref(route.query.type || "");
 
-console.log(route)
 const defaultFilters = {
   status: 'all',
   genres: [],
   tags: [],
   type: 'or',
   sort: 'views',
-  order: 'desc'
+  order: 'desc',
 };
 const activeFilterCount = computed(() => {
   let count = 0;
@@ -144,7 +144,7 @@ const filteredNovels = computed(() => {
 
 // Handle search with new filters
 const handleSearch = async (filters) => {
-  searchQuery.value = filters.search || searchQuery.value;
+  searchQuery.value = filters.search;
   page.value = filters.page || page.value;
   limit.value = filters.limit || limit.value;
   sort.value = filters.sort || sort.value;
@@ -153,6 +153,20 @@ const handleSearch = async (filters) => {
   tags.value = filters.tags || tags.value;
   type.value = filters.type || type.value;
   status.value = filters.status || status.value;
+
+  //update the route search query without reloading the page
+  useRouter().push({
+    query: {
+      search: searchQuery.value,
+      page: page.value,
+      limit: limit.value,
+      sort: sort.value,
+      order: order.value,
+      genres: genres.value.join(","),
+      tags: tags.value.join(","),
+      type: type.value,
+    }
+  })
 };
 
 // Load web mode

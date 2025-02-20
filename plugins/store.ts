@@ -782,20 +782,21 @@ async addBookmark(novel_id: number, chapter: number): Promise<void> {
         let res = await store.get(key);
         return res ? JSON.parse(res) : null;
     }
-    async deleteCache(prefix:string) {
+    async deleteCache(prefix: string) {
         if (!process.client) return;
         const store = await this.getAccountSettingsStore();
         if (!store) return;
-        const cursor = await store.openCursor();
+        let cursor = await store.openCursor();
         if (!cursor) return;
-
+      
         while (cursor) {
-            if (cursor.key.startsWith(prefix)) {
-                await cursor.delete();
-            }
-            await cursor.continue();
+          if (cursor.key.startsWith(prefix)) {
+            await cursor.delete();
+          }
+          cursor = await cursor.continue();
         }
     }
+      
     async logout() {
         if (!process.client) return;
         const store = await this.getAccountSettingsStore();

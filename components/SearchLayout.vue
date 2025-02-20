@@ -32,7 +32,6 @@
           class="flex-grow outline-none bg-transparent text-gray-700 transition-opacity duration-300"
           v-model="filters.search"
           @keyup.enter="handleSearch"
-
         />
 
         <!-- Filter Button -->
@@ -288,6 +287,10 @@ const props = defineProps({
   activeFilterCount: {
     type: Number,
     default: 0
+  },
+  searchQuery: {
+    type: String,
+    default: ''
   }
 });
 
@@ -304,7 +307,7 @@ const isSearchBarCollapsed = ref(false);
 
 // Initialize filters with props.filter or default values
 const filters = reactive({
-  search: props.filter.search || route.query.search || '',
+  search: route.query.search || '',
   status: props.filter.status || 'all',
   sort: props.filter.sort || 'date',
   order: props.filter.order || 'desc',
@@ -336,6 +339,7 @@ const toggleExpand = (novelId) => {
 const handleSearch = () => {
   isFilterModalOpen.value = false;
   console.log(filters.genres.map(encodeURIComponent).join(","));
+  console.log(filters)
   emit('search', { ...filters });
   
 };
@@ -356,21 +360,21 @@ const handleScroll = () => {
 window.addEventListener('scroll', handleScroll);
 
 // Watch for changes in props.filter and update the local filters
-watch(
-  () => props.filter,
-  (newFilter) => {
-    if (newFilter) {
-      filters.search = newFilter.search || '';
-      filters.status = newFilter.status || 'all';
-      filters.sort = newFilter.sort || 'date';
-      filters.order = newFilter.order || 'desc';
-      filters.genres = newFilter.genres || [];
-      filters.tags = newFilter.tags || [];
-      filters.type = newFilter.type || 'or';
-    }
-  },
-  { deep: true, immediate: true }
-);
+// watch(
+//   () => props.filter,
+//   (newFilter) => {
+//     if (newFilter) {
+//       filters.search = newFilter.search || '';
+//       filters.status = newFilter.status || 'all';
+//       filters.sort = newFilter.sort || 'date';
+//       filters.order = newFilter.order || 'desc';
+//       filters.genres = newFilter.genres || [];
+//       filters.tags = newFilter.tags || [];
+//       filters.type = newFilter.type || 'or';
+//     }
+//   },
+//   { deep: true, immediate: true }
+// );
   </script>
   
   <style scoped>
