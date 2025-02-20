@@ -156,7 +156,7 @@ class Store {
 
         let webMode = await store.get("webMode");
         if (!webMode) {
-            webMode = "Safe";
+            webMode = "safe";
             await this.setWebMode(webMode);
         }
         return webMode;
@@ -796,6 +796,12 @@ async addBookmark(novel_id: number, chapter: number): Promise<void> {
             await cursor.continue();
         }
     }
+    async logout() {
+        if (!process.client) return;
+        const store = await this.getAccountSettingsStore();
+        if (!store) return;
+        await store.clear();
+    }   
 }
 
 export default defineNuxtPlugin(() => {

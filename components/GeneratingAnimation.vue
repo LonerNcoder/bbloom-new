@@ -1,29 +1,10 @@
 <template>
-    <div class="page-container">
-      <div class="blur-background"></div>
-      <div class="scene-container">
-        <!-- Background wall -->
-        <div class="wall"></div>
-        
-        <!-- Chibi character -->
-        <div class="chibi">
-          <!-- Body parts -->
-          <div class="head">
-            <div class="eye left"></div>
-            <div class="eye right"></div>
-            <div class="smile"></div>
-          </div>
-          <div class="body"></div>
-          <div class="arm-left"></div>
-          <div class="arm-right"></div>
-          <div class="leg-left"></div>
-          <div class="leg-right"></div>
-        </div>
-        
-        <!-- Puzzle piece -->
-        <div class="puzzle-piece"></div>
-      </div>
-    </div>
+  <div class="container">
+    <div class="dash uno"></div>
+    <div class="dash dos"></div>
+    <div class="dash tres"></div>
+    <div class="dash cuatro"></div>
+  </div>
   </template>
   
   <script setup>
@@ -31,185 +12,146 @@
   </script>
   
   <style scoped>
-  .page-container {
-    position: fixed;
-    top: 0;
-    left: 0;
-    width: 100%;
-    height: 100vh;
-    display: flex;
-    justify-content: center;
-    align-items: center;
+  .container {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  display: flex;
+}
+
+.dash {
+  margin: 0 15px;
+  width: 35px;
+  height: 15px;
+  border-radius: 8px;
+  background: #FF2CBD;
+  /* box-shadow: 0 0 10px 0 #FECDFF; */
+}
+
+.uno {
+  margin-right: -18px;
+  transform-origin: center left;
+  animation: spin 3s linear infinite;  
+}
+
+.dos {
+  transform-origin: center right;
+  animation: spin2 3s linear infinite;
+  animation-delay: .2s;
+}
+
+.tres {
+  transform-origin: center right;
+  animation: spin3 3s linear infinite;
+  animation-delay: .3s;
+}
+
+.cuatro {
+  transform-origin: center right;
+  animation: spin4 3s linear infinite;
+  animation-delay: .4s;
+}
+
+@keyframes spin {
+  0% {
+    transform: rotate(0deg);
   }
-  
-  .blur-background {
-    position: fixed;
-    top: 0;
-    left: 0;
-    width: 100%;
-    height: 100%;
-    backdrop-filter: blur(2px);
-    -webkit-backdrop-filter: blur(8px);
+  25% {
+    transform: rotate(360deg);
   }
-  
-  .scene-container {
-    width: 300px;
-    height: 300px;
-    position: relative;
-    background: rgba(240, 240, 240, 0.9);
-    overflow: hidden;
-    border-radius: 15px;
-    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
-    z-index: 1;
+  30% {
+    transform: rotate(370deg);
   }
-  
-  .wall {
-    position: absolute;
-    width: 100%;
-    height: 100%;
-    background: rgba(224, 224, 224, 0.9);
-    background-image: linear-gradient(45deg, rgba(208, 208, 208, 0.8) 25%, transparent 25%),
-                      linear-gradient(-45deg, rgba(208, 208, 208, 0.8) 25%, transparent 25%),
-                      linear-gradient(45deg, transparent 75%, rgba(208, 208, 208, 0.8) 75%),
-                      linear-gradient(-45deg, transparent 75%, rgba(208, 208, 208, 0.8) 75%);
-    background-size: 20px 20px;
+  35% {
+    transform: rotate(360deg);
   }
-  
-  .chibi {
-    position: absolute;
-    bottom: 50px;
-    left: 50%;
-    transform: translateX(-50%);
-    animation: bounce 1s infinite ease-in-out;
-    z-index: 2;
+  100% {
+    transform: rotate(360deg);
   }
-  
-  .head {
-    width: 60px;
-    height: 60px;
-    background: #ffb7b7;
-    border-radius: 50%;
-    position: relative;
+}
+
+@keyframes spin2 {
+  0% {
+    transform: rotate(0deg);
   }
-  
-  .eye {
-    width: 8px;
-    height: 8px;
-    background: #333;
-    border-radius: 50%;
-    position: absolute;
-    top: 25px;
+  20% {
+    transform: rotate(0deg);
   }
-  
-  .eye.left {
-    left: 15px;
+  30% {
+    transform: rotate(-180deg);
   }
-  
-  .eye.right {
-    right: 15px;
+  35% {
+    transform: rotate(-190deg);
   }
-  
-  .smile {
-    width: 20px;
-    height: 10px;
-    border-bottom: 3px solid #333;
-    border-radius: 50%;
-    position: absolute;
-    bottom: 15px;
-    left: 20px;
+  40% {
+    transform: rotate(-180deg);
   }
-  
-  .body {
-    width: 40px;
-    height: 50px;
-    background: #ff9494;
-    border-radius: 20px;
-    position: absolute;
-    top: 55px;
-    left: 10px;
+  78% {
+    transform: rotate(-180deg);
   }
-  
-  .arm-left, .arm-right {
-    width: 15px;
-    height: 40px;
-    background: #ffb7b7;
-    position: absolute;
-    top: 60px;
+  95% {
+    transform: rotate(-360deg);
   }
-  
-  .arm-left {
-    left: -5px;
-    transform-origin: top;
-    animation: waveLeft 1s infinite ease-in-out;
+  98% {
+    transform: rotate(-370deg);
   }
-  
-  .arm-right {
-    right: -5px;
-    transform-origin: top;
-    animation: waveRight 1s infinite ease-in-out;
+  100% {
+    transform: rotate(-360deg);
   }
-  
-  .leg-left, .leg-right {
-    width: 15px;
-    height: 30px;
-    background: #ffb7b7;
-    position: absolute;
-    top: 100px;
+}
+
+@keyframes spin3 {
+  0% {
+    transform: rotate(0deg);
   }
-  
-  .leg-left {
-    left: 5px;
+  27% {
+    transform: rotate(0deg);  
   }
-  
-  .leg-right {
-    right: 5px;
+  40% {
+    transform: rotate(180deg);
   }
-  
-  .puzzle-piece {
-    width: 40px;
-    height: 40px;
-    background: #4CAF50;
-    position: absolute;
-    right: 80px;
-    top: 100px;
-    clip-path: path('M 0,0 L 40,0 L 40,40 L 0,40 L 0,0 M 20,0 L 25,5 L 15,5 L 20,0 M 40,20 L 35,25 L 35,15 L 40,20');
-    animation: floatPiece 2s infinite ease-in-out;
-    z-index: 2;
+  45% {
+    transform: rotate(190deg);
   }
-  
-  @keyframes bounce {
-    0%, 100% {
-      transform: translateX(-50%) translateY(0);
-    }
-    50% {
-      transform: translateX(-50%) translateY(-10px);
-    }
+  50% {
+    transform: rotate(180deg);
   }
-  
-  @keyframes waveLeft {
-    0%, 100% {
-      transform: rotate(-20deg);
-    }
-    50% {
-      transform: rotate(20deg);
-    }
+  62% {
+    transform: rotate(180deg);
   }
-  
-  @keyframes waveRight {
-    0%, 100% {
-      transform: rotate(20deg);
-    }
-    50% {
-      transform: rotate(-20deg);
-    }
+  75% {
+    transform: rotate(360deg);
   }
-  
-  @keyframes floatPiece {
-    0%, 100% {
-      transform: translateY(0) rotate(0deg);
-    }
-    50% {
-      transform: translateY(-15px) rotate(5deg);
-    }
+  80% {
+    transform: rotate(370deg);
   }
+  85% {
+    transform: rotate(360deg);
+  }
+  100% {
+    transform: rotate(360deg);
+  }
+}
+
+@keyframes spin4 {
+  0% {
+    transform: rotate(0deg);
+  }
+  38% {
+    transform: rotate(0deg);
+  }
+  60% {
+    transform: rotate(-360deg);
+  }
+  65% {
+    transform: rotate(-370deg);
+  }
+  75% {
+    transform: rotate(-360deg);
+  }
+  100% {
+    transform: rotate(-360deg);
+  }
+}
   </style>

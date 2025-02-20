@@ -56,7 +56,7 @@ const route = useRoute();
 const { $store } = useNuxtApp();
 const webMode = ref(await $store.getWebMode())
 const config = useRuntimeConfig().public
-var API = webMode.value === "Safe"? config.baseSafeAPI : config.basePriateAPI
+var API = webMode.value === "safe"? config.baseSafeAPI : config.basePriateAPI
 
 // Extract query parameters from the route
 const search = ref(route.query.search || "");
@@ -161,8 +161,8 @@ const loadWebMode = async () => {
     const mode = await $store.getWebMode();
     webMode.value = mode;
 
-    if (mode !== "Safe") {
-      console.log("Pirate mode activated");
+    if (mode !== "safe") {
+      console.log("pirate mode activated");
       // Add pirate mode specific logic here
     }
   } catch (err) {

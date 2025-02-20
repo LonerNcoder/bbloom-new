@@ -47,6 +47,7 @@
     "nuxt-security": "2.1.5",
     "openai": "^4.82.0",
     "pinia": "^3.0.1",
+    "pinia-plugin-persistedstate": "^4.2.0",
     "radix-vue": "^1.9.13",
     "requirejs": "^2.3.7",
     "sharp": "^0.33.5",

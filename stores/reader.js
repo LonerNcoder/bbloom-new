@@ -44,7 +44,7 @@ export const useReaderStore = defineStore('reader', {
     }
   },
   persist: {
-    storage: localStorage,
+    storage: piniaPluginPersistedstate.localStorage(),
     key: 'reader',
     
   }

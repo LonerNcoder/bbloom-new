@@ -15,9 +15,9 @@
   const webMode = ref(await $store.getWebMode())
       var API;
       const config = useRuntimeConfig().public
-      if(webMode.value === "Safe"){
+      if(webMode.value === "safe"){
         API = config.baseSafeAPI
-      }else if(webMode.value === "Pirate"){
+      }else if(webMode.value === "pirate"){
         API = config.basePriateAPI
       }else{
         API = config.baseSafeAPI

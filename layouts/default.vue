@@ -10,7 +10,8 @@
                   <!-- Logo -->
                   <div class="flex-shrink-0 pl-6">
                       <div class="logo-text" @click="navigateTo('/')">
-                          BookBloom
+                        <span class="full-logo">BookBloom</span>
+                        <span class="short-logo">Bb</span>
                       </div>
                   </div>
 
@@ -83,15 +84,16 @@
                    <!-- Right Section -->
                    <div class="flex items-center space-x-2 lg:space-x-4 pr-6">
                       <!-- WebMode Selector -->
-                      <select 
+                      <!-- <select 
                           v-model="selectedWebMode" 
                           @change="changeWebMode"
                           class="webMode-select-new"
                       >
-                          <option value="Safe">Safe</option>
-                          <option value="Pirate">Pirate</option>
-                          <option value="Nsfw">Nsfw</option>
-                      </select>
+                          <option value="safe">safe</option>
+                          <option value="pirate">pirate</option>
+                          <option value="nsfw">nsfw</option>
+                      </select> -->
+                      <USelect v-model="selectedWebMode" @change="changeWebMode" :options="['safe', 'pirate', 'nsfw']" />
 
                       <!-- Theme Toggle -->
                       <ColorScheme><USelect v-model="$colorMode.preference" :options="['system', 'light', 'dark']" /></ColorScheme>
@@ -101,18 +103,18 @@
                       <div v-if="user.loggedIn">
                           <button 
                               @click="toggleProfileModal"
-                              class="flex items-center px-4 py-2 rounded-full bg-[--btn-color-4] text-[--btn-text-color]
+                              class="relative text-center block w-full disabled:cursor-not-allowed disabled:opacity-75 focus:outline-none border-0 rounded-md text-sm px-2.5 py-1.5 shadow-sm  ring-1 ring-inset ring-gray-300 dark:ring-gray-700 focus:ring-2 focus:ring-primary-500 dark:focus:ring-primary-400 bg-[--btn-color-4] text-[--btn-text-color]
                               hover:bg-[--btn-color-3]
                               transition-colors duration-300 button-text"
                           >
-                              {{ user.username }}
+                              {{ user.username.slice(0, 10) }}
                           </button>
                       </div>
                       <div v-else>
                           <NuxtLink 
                               to="/login"
-                              class="px-4 py-2 rounded-full bg-[--btn-color-4] text-white 
-                              hover:bg-slate-700 dark:bg-slate-700 dark:hover:bg-[--btn-color-4] 
+                              class="relative text-center block w-full disabled:cursor-not-allowed disabled:opacity-75 focus:outline-none border-0 rounded-md text-sm px-2.5 py-1.5 shadow-sm  ring-1 ring-inset ring-gray-300 dark:ring-gray-700 focus:ring-2 focus:ring-primary-500 dark:focus:ring-primary-400 bg-[--btn-color-4] text-[--btn-text-color]
+                              hover:bg-[--btn-color-3]
                               transition-colors duration-300 button-text"
                           >
                               Login
@@ -122,7 +124,7 @@
                       <!-- Mobile Menu Button (smaller touch target on larger screens) -->
                       <button 
                           @click="toggleMenu"
-                          class="md:hidden p-2 lg:p-1.5 rounded-lg hover:bg-slate-200 
+                          class="md:hidden p-2 lg:p-1.5 rounded-md hover:bg-slate-200 
                           dark:hover:bg-slate-700 transition-colors duration-300"
                       >
                           <div class="w-6 h-6 lg:w-5 lg:h-5 flex flex-col justify-between">
@@ -209,20 +211,20 @@
       </header>
       
       <!-- Profile Modal -->
-      <div v-if="isProfileModalOpen" class="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center">
-          <div class="bg-white dark:bg-gray-800 rounded-lg shadow-xl p-6 m-4 max-w-sm w-full transition-colors duration-300">
+      <div v-if="isProfileModalOpen" class="fixed inset-0 backdrop-blur-sm bg-opacity-50 z-50 flex items-center justify-center">
+          <div class="bg-white dark:bg-gray-800 rounded-md shadow-xl p-6 m-4 max-w-sm w-full transition-colors duration-300">
               <h3 class="text-xl font-semibold mb-4 dark:text-white">Profile Settings</h3>
               <p class="mb-4 dark:text-gray-300">Username: {{ user.username }}</p>
               <div class="flex flex-col space-y-3">
                   <button 
                       @click="logout"
-                      class="w-full px-4 py-2 bg-red-500 text-white rounded-lg hover:bg-red-600 transition-colors duration-300"
+                      class="w-full px-4 py-2 bg-red-500 text-white rounded-md hover:bg-red-600 transition-colors duration-300"
                   >
                       Logout
                   </button>
                   <button 
                       @click="toggleProfileModal"
-                      class="w-full px-4 py-2 bg-gray-200 dark:bg-gray-700 rounded-lg hover:bg-gray-300 dark:hover:bg-gray-600 transition-colors duration-300"
+                      class="w-full px-4 py-2 bg-gray-200 dark:bg-gray-700 rounded-md hover:bg-gray-300 dark:hover:bg-gray-600 transition-colors duration-300"
                   >
                       Close
                   </button>
@@ -368,6 +370,9 @@ onMounted(async () => {
 
       const logout = () => {
           isProfileModalOpen.value = false;
+          $store.logout();
+          user.logout();
+          router.push("/")
       };
 
       const goSearchPage = () =>{
@@ -393,7 +398,7 @@ onMounted(async () => {
       @apply text-base md:text-sm 
       text-[--primary-text-color]
       hover:bg-[--btn-color-4]
-      px-3 py-2 rounded-lg font-medium
+      px-3 py-2 rounded-md font-medium
       transition-colors duration-300;
   }
 
@@ -412,8 +417,26 @@ onMounted(async () => {
 
   }
 
+  .full-logo {
+  display: inline;
+}
+
+.short-logo {
+  display: none;
+}
+
+/* When the viewport width is small (e.g., less than 600px), display the abbreviated version */
+@media (max-width: 600px) {
+  .full-logo {
+    display: none;
+  }
+  .short-logo {
+    display: inline;
+  }
+}
+
   .mobile-nav-link {
-      @apply block px-3 py-2 rounded-lg
+      @apply block px-3 py-2 rounded-md
       text-sm
       text-slate-600 dark:text-slate-300 
       hover:text-slate-800 hover:bg-slate-200 
@@ -442,7 +465,7 @@ onMounted(async () => {
 
   .webMode-select {
       @apply text-base md:text-sm
-      px-3 py-2 rounded-lg 
+      px-3 py-2 rounded-md 
       bg-[--btn-color-4] text-[--btn-text-color]
       border-0 focus:ring-2 
       focus:ring-slate-500 dark:focus:ring-slate-400 
@@ -450,7 +473,7 @@ onMounted(async () => {
   }
   .webMode-select-new{
       @apply text-base md:text-sm
-      px-3 py-2 rounded-lg 
+      px-3 py-2 rounded-md 
       bg-white text-[#00A6A6]
       border-0 focus:ring-2 
       focus:ring-slate-500 dark:focus:ring-slate-400 

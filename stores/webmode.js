@@ -2,9 +2,9 @@ import { defineStore } from 'pinia'
 
 export const useWebModeStore = defineStore('webMode', {
   state: () => ({
-    webMode: "Safe"
+    webMode: "safe"
   }),
   persist: {
-    storage: localStorage,
+    storage: piniaPluginPersistedstate.localStorage(),
   }
 })

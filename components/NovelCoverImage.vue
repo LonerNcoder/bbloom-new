@@ -30,6 +30,7 @@
       </div>
   
       <!-- Edit Modal -->
+
       <GeneratingAnimation v-if="handleingGenImage"></GeneratingAnimation>
       <DialogRoot v-else :open="isEditModalOpen" @update:open="handleModalChange">
         <DialogPortal>
@@ -80,11 +81,11 @@
   
               <!-- Crop Tab -->
               <TabsContent value="crop">
-                <div v-if="cropImage" class="h-[400px]">
+                <div v-if="cropImage">
                   <VueCropper
                     ref="cropper"
                     :src="cropImage"
-                    :aspect-ratio="3/4"
+                
                     :view-mode="2"
                     :background="false"
                     :auto-crop-area="1"
@@ -124,7 +125,9 @@
   
               <!-- Generate Tab -->
               <TabsContent value="generate">
-                <GenerateImage @final-image="handleGeneratedImage" />
+                <div class="generate-image-btn-container">
+                  <GenerateImage @final-image="handleGeneratedImage" />
+                </div>
               </TabsContent>
             </TabsRoot>
           </DialogContent>
@@ -177,7 +180,7 @@ import 'cropperjs/dist/cropper.css'
   const showOptions = ref(false)
     const isEditModalOpen = ref(false)
     const activeTab = ref('upload')
-    const cropImage = ref(null)
+    const cropImage = ref(props.resetImage || props.coverImage)
     const cropper = ref(null)
     const handleingGenImage = ref(false)
 
@@ -364,14 +367,30 @@ import 'cropperjs/dist/cropper.css'
     }
     }
 
-    const applyCrop = () => {
-        if (cropper.value) {
-            const canvas = cropper.value.getCroppedCanvas()
-            const croppedImage = canvas.toDataURL('image/jpeg')
-            emit('update:image', croppedImage)
-            isEditModalOpen.value = false
-        }
-    }
+    const applyCrop = async () => {
+      if (cropper.value) {
+        // Get the cropped canvas
+        const canvas = cropper.value.getCroppedCanvas();
+        
+        // Convert canvas to a blob
+        canvas.toBlob(async (blob) => {
+          if (!blob) return;
+          
+          try {
+            // Compress the blob to ensure it's below 150 KB
+            const compressedBlob = await compressImage(blob, 150);
+            // Upload the compressed blob to the CDN
+            const cdnUrl = await uploadToCDN(compressedBlob);
+            // Emit the CDN URL and close the modal
+            emit('update:image', cdnUrl);
+            isEditModalOpen.value = false;
+          } catch (error) {
+            console.error('Error processing cropped image:', error);
+          }
+        }, 'image/jpeg', 0.9);
+      }
+    };
+
 
   </script>
   
@@ -423,5 +442,12 @@ import 'cropperjs/dist/cropper.css'
   .modal-enter-from,
   .modal-leave-to {
     opacity: 0;
+  }
+
+  .generate-image-btn-container {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    height: 100%;
   }
   </style>

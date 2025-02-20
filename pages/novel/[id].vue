@@ -321,9 +321,9 @@ import { storeToRefs } from 'pinia';
       const webModeStore = useWebModeStore()
       var API;
       const config = useRuntimeConfig().public
-      if( webModeStore.webMode === "Safe"){
+      if( webModeStore.webMode === "safe"){
         API = config.baseSafeAPI
-      }else if(webModeStore.webMode === "Pirate"){
+      }else if(webModeStore.webMode === "pirate"){
         API = config.basePriateAPI
       }else{
         API = config.baseSafeAPI

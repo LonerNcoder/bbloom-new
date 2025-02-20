@@ -1,4 +1,3 @@
-
 // TextHighlighter.js - A lightweight library for persistent text highlighting
 class TextHighlighter {
     constructor(options = {}) {
@@ -396,59 +395,125 @@ class TextHighlighter {
     renderHighlight(highlight) {
       const range = this.deserializeRange(highlight.range);
       if (!range) {
-        // Range deserialization failed, remove highlight from data
         this.highlights = this.highlights.filter(h => h.id !== highlight.id);
         this.saveHighlights();
-        return; // Skip rendering this highlight
+        return;
       }
+    
+      try {
+        // Get all text nodes within the range
+        const textNodes = this.getTextNodesInRange(range);
+    
+        if (textNodes.length === 0) return; // No text nodes in range, something went wrong, or range is collapsed
+    
+        // Create highlight spans for each text node
+        textNodes.forEach((node, index) => {
+          const span = document.createElement('span');
+          span.className = `${this.options.containerClass}-highlight`;
+          span.dataset.id = highlight.id;
+          span.style.backgroundColor = highlight.color;
+          span.style.cursor = 'pointer';
+          span.style.position = 'relative';
+    
+          // Only create note bubble for the first span
+          if (index === 0) {
+            this.createNoteBubble(span, highlight.note); // Extract note bubble creation to a function
+          }
+    
+          // Create a new range for this text node
+          const nodeRange = document.createRange();
+    
+          // Handle start and end positions for each node
+          if (textNodes.length === 1) {
+            // Single text node scenario
+            nodeRange.setStart(node, range.startOffset);
+            nodeRange.setEnd(node, range.endOffset);
+          } else if (index === 0) {
+            // First node in multi-node scenario
+            nodeRange.setStart(node, range.startOffset);
+            nodeRange.setEnd(node, node.length);
+          } else if (index === textNodes.length - 1) {
+            // Last node in multi-node scenario
+            nodeRange.setStart(node, 0);
+            nodeRange.setEnd(node, range.endOffset);
+          } else {
+            // Middle nodes: highlight entire content
+            nodeRange.setStart(node, 0);
+            nodeRange.setEnd(node, node.length);
+          }
+    
+          try {
+            nodeRange.surroundContents(span);
+          } catch (error) {
+            console.warn("Error surrounding content with highlight span:", error);
+          }
+        });
+      } catch (error) {
+        console.warn("Error creating highlight spans:", error);
+        this.highlights = this.highlights.filter(h => h.id !== highlight.id);
+        this.saveHighlights();
+      }
+    }
 
-      const span = document.createElement('span');
-      span.className = `${this.options.containerClass}-highlight`;
-      span.dataset.id = highlight.id;
-      span.style.backgroundColor = highlight.color;
-      span.style.cursor = 'pointer';
-      span.style.position = 'relative'; // Required for absolute positioning of the note bubble
-
-      // Create note bubble
+    createNoteBubble(span, noteText) {
       const noteBubble = document.createElement('div');
       noteBubble.className = `${this.options.containerClass}-note-bubble`;
-      noteBubble.textContent = highlight.note;
+      noteBubble.textContent = noteText;
       noteBubble.style.cssText = `
-        position: relative;
-        display: none; /* Hidden by default */
+        position: absolute;
+        display: none;
         background-color: white;
         color: black;
         padding: 8px;
         border-radius: 4px;
         box-shadow: 0 2px 5px rgba(0,0,0,0.2);
         z-index: 1001;
-        bottom: 120%; /* Position above the highlight */
+        bottom: 120%;
         left: 50%;
         transform: translateX(-50%);
         white-space: nowrap;
       `;
       span.appendChild(noteBubble);
-
-
-      // Add hover event listeners to show/hide note bubble
+    
+      // Add hover events
       span.addEventListener('mouseover', () => {
-        console.log("mouseover");
         noteBubble.style.display = 'block';
       });
       span.addEventListener('mouseout', () => {
-        console.log("mouseout");
         noteBubble.style.display = 'none';
       });
+    }
 
+    getTextNodesInRange(range) {
+      const textNodes = [];
+      const walker = document.createTreeWalker(
+        document.body,
+        NodeFilter.SHOW_TEXT,
+        {
+          acceptNode: function(node) {
+            return NodeFilter.FILTER_ACCEPT;
+          }
+        }
+      );
 
-      try {
-        range.surroundContents(span);
-      } catch (error) {
-        console.warn("Error surrounding content with highlight span:", error);
-        // Handle error, possibly by removing the highlight data as it cannot be rendered
-        this.highlights = this.highlights.filter(h => h.id !== highlight.id);
-        this.saveHighlights();
+      let node;
+      let started = false;
+
+      while (node = walker.nextNode()) {
+        if (node === range.startContainer) {
+          started = true;
+        }
+        
+        if (started) {
+          textNodes.push(node);
+        }
+        
+        if (node === range.endContainer) {
+          break;
+        }
       }
+
+      return textNodes;
     }
 
 

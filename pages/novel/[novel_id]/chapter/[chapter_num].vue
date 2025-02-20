@@ -123,9 +123,9 @@
   const webModeStore = useWebModeStore()
   var API:String;
   const config = useRuntimeConfig().public
-  if(webModeStore.webMode === "Safe"){
+  if(webModeStore.webMode === "safe"){
     API = String(config.baseSafeAPI)
-  }else if(webModeStore.webMode === "Pirate"){
+  }else if(webModeStore.webMode === "pirate"){
     API = String(config.basePriateAPI)
   }else{
     API = String(config.baseSafeAPI)

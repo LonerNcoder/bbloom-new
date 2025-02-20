@@ -53,7 +53,7 @@ const props = defineProps({
   to: { type: String, required: true },
   name: { type: String, default: 'Start Reading' },
   bgcolor: { type: Number, default: 2 },
-  webMode: { type: String, default: 'Safe' },
+  webMode: { type: String, default: 'safe' },
 });
 
 

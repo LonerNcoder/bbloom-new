@@ -54,9 +54,18 @@ export const useUserStore = defineStore('user', {
     },
     setLoggedIn(status) {
       this.loggedIn = status
+    },
+    logout() {
+      this.id = ""
+      this.username = "anon"
+      this.image = ""
+      this.sessionToken = ""
+      this.accessToken = ""
+      this.apiKey = ""
+      this.loggedIn = false
     }
   },
   persist: {
-    storage: localStorage,
+    storage: piniaPluginPersistedstate.localStorage(),
   }
 })

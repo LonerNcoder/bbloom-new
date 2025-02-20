@@ -13,6 +13,7 @@ export default defineNuxtConfig({
         config.plugins.push(vuetify({ autoImport: true }))
       })
     },
+    'pinia-plugin-persistedstate/nuxt'
   ],
   devServer: {
     port: 3000,
@@ -57,6 +58,13 @@ export default defineNuxtConfig({
       baseSafeAPI: process.env.BASE_SAFE_API,
       basePriateAPI: process.env.BASE_PIRATE_API,
     }
+  },
+  piniaPluginPersistedstate: {
+    storage: 'localStorage',
+    cookieOptions: {
+      sameSite: 'lax',
+    },
+    debug: true,
   },
 
   compatibilityDate: '2024-11-01',

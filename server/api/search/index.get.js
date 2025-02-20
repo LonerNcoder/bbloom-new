@@ -8,7 +8,7 @@ export default defineEventHandler(async (event) => {
   try {
     const query = await getQuery(event);
     const {
-      mode = "Safe",
+      mode = "safe",
       search = "",
       genres = "",
       page = 1,

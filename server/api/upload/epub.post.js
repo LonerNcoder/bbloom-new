@@ -374,6 +374,7 @@ function extract(xml) {
                     create: { name: genre },
                   })),
               },
+              isPrivate: true,
               summary: summary,
               status: "Ongoing",
               chapters: chapters.length,

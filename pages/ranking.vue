@@ -90,13 +90,13 @@ import { useSmartFetch } from '~/composables/useSmartFetch'
     const totalPages = ref(1);
     var API;
     const config = useRuntimeConfig().public
-    if(webMode.value === "Safe"){
-      API = `${config.baseSafeAPI}search?mode=Safe&`
-    }else if(webMode.value === "Pirate"){
+    if(webMode.value === "safe"){
+      API = `${config.baseSafeAPI}search?mode=safe&`
+    }else if(webMode.value === "pirate"){
       const basePriateUrl = config.basePriateAPI
       API = basePriateUrl + "?"
     }else{
-      API = `${config.baseSafeAPI}search?mode=Nsfw&`
+      API = `${config.baseSafeAPI}search?mode=nsfw&`
 
     }
 
