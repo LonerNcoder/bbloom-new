@@ -42,11 +42,24 @@
                 class="w-full pl-10 pr-4 py-2 bg-white/20 rounded-lg text-white placeholder-white/70 focus:outline-none focus:ring-2 focus:ring-white/50"
               />
             </div>
+            <div class="relative">
+              <p class="text-red-500 text-sm">{{ errorMessage }}</p>
+            </div>
             
-            <button class="w-full py-2 bg-white text-purple-600 rounded-lg font-semibold hover:bg-white/90 transition-colors"
-            @click="handleLogin"
+            <button 
+              class="w-full py-2 bg-white text-purple-600 rounded-lg font-semibold transition-all overflow-hidden flex justify-center items-center"
+              :class="{ 'opacity-80': isLoading, 'hover:bg-white/90': !isLoading }"
+              @click="handleLogin"
+              :disabled="isLoading"
             >
-              Login
+              <span v-if="!isLoading">Login</span>
+              <span 
+                v-else
+                class="animate-pulse text-center"
+                :style="{ fontSize: loginMessageFontSize }"
+              >
+                {{ currentLoginMessage }}
+              </span>
             </button>
             
             <p class="text-center text-white text-sm">
@@ -62,7 +75,7 @@
 </template>
 
 <script setup>
-import { ref, reactive, onMounted, onUnmounted } from 'vue';
+import { ref, reactive, onMounted, onUnmounted, computed } from 'vue';
 import {
   BookOpen,
   BookHeart,
@@ -194,13 +207,31 @@ const errors = reactive({
 })
 const errorMessage = ref('')
 
+// Login message state
+const loginMessages = [
+  "Hold tight",
+  "Logging you in right away",
+  "It's taking a bit more time",
+  "Server slow",
+  "Done"
+];
+const currentLoginMessageIndex = ref(0);
+const currentLoginMessage = computed(() => loginMessages[currentLoginMessageIndex.value]);
+const loginMessageFontSize = computed(() => {
+  // Adjust font size based on message length
+  const messageLength = currentLoginMessage.value.length;
+  if (messageLength > 20) return '0.85rem';
+  if (messageLength > 12) return '0.9rem';
+  return '1rem';
+});
+
+let loginMessageInterval;
+
 // Form validation function
 const validateForm = () => {
   let isValid = true
   errors.username = ''
   errors.password = ''
-
-
 
   if (!username.value.trim()) {
     errors.username = 'Username is required'
@@ -223,8 +254,18 @@ const handleLogin = async () => {
   if (!validateForm()) return
 
   try {
-    isLoading.value = true
-    errorMessage.value = ''
+    isLoading.value = true;
+    errorMessage.value = '';
+    currentLoginMessageIndex.value = 0;
+    
+    // Start the message cycling animation
+    loginMessageInterval = setInterval(() => {
+      if (currentLoginMessageIndex.value < loginMessages.length - 1) {
+        currentLoginMessageIndex.value++;
+      } else {
+        clearInterval(loginMessageInterval);
+      }
+    }, 500);
 
     const payload = {
       username: username.value,
@@ -237,6 +278,12 @@ const handleLogin = async () => {
       },
       body: JSON.stringify(payload)
     })
+
+    // Show "Done" message before completing
+    currentLoginMessageIndex.value = loginMessages.length - 1;
+    
+    // Small delay to show the "Done" message
+    await new Promise(resolve => setTimeout(resolve, 500));
 
     if (response.statusCode === 200) {
       const data = response.body
@@ -253,13 +300,14 @@ const handleLogin = async () => {
       await $store.setUserData(userData)
       router.push('/')
     } else {
-      errorMessage.value = response.statusText
+      console.log(response)
+      errorMessage.value = response.message
     }
   } catch (error) {
-    console.error('Login failed:', error)
-    errorMessage.value = 'An error occurred during login.'
+    errorMessage.value = 'Invalid credentials!'
   } finally {
-    isLoading.value = false
+    clearInterval(loginMessageInterval);
+    isLoading.value = false;
   }
 }
 </script>

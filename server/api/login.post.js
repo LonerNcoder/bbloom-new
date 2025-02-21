@@ -11,6 +11,9 @@ export default defineEventHandler(async (event) => {
 
     // Validate user credentials (this is just an example, implement your own logic)
     const user = await prisma.user.findUnique({ where: { username } });
+    if (!user) {
+      return createError({ statusCode: 401, statusMessage: 'Invalid credentials' });
+    }
     const passwordMatch = await bcrypt.compare(password, user.password);
     if (!user || passwordMatch === false) {
       return createError({ statusCode: 401, statusMessage: 'Invalid credentials' });
@@ -65,7 +68,7 @@ export default defineEventHandler(async (event) => {
       },
     };
   } catch (error) {
-    console.error('Error logging in:', error);
+    // console.error('Error logging in:', error);
     return createError({ statusCode: 500, statusMessage: 'Failed to login user' });
   } finally {
     await prisma.$disconnect();

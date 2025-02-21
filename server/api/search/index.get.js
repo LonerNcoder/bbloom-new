@@ -1,6 +1,7 @@
 import { defineEventHandler, createError, getQuery } from 'h3';
 import { PrismaClient } from '@prisma/client';
 import { verifyUser } from '~/server/utils';
+import randomPrisma from '~/prisma/middleware/random.js';
 
 const prisma = new PrismaClient();
 
@@ -17,7 +18,9 @@ export default defineEventHandler(async (event) => {
       order = 'desc',
       status = "all",
       tags = "",
-      type = "or"  // Important:  "or" or "and" for genre/tag matching
+      type = "or",
+      random = "false"
+        // Important:  "or" or "and" for genre/tag matching
     } = query;
 
     // ... (Your validation code for limit, page, sort, order - remains the same) ...
@@ -61,7 +64,11 @@ export default defineEventHandler(async (event) => {
     }
     const parsedOffset = (parsedPage - 1) * parsedLimit;
 
-
+    // Validate random parameter
+    if (random.trim() !== "true" && random.trim() !== "false") {
+      throw createError({ statusCode: 400, statusMessage: 'Invalid random' });
+    }
+    const randomBoolean = random.trim() === "true";
     // --- Build the WHERE clause ---
     const where = {
       AND: [{ isPrivate: false }], // Always start with isPrivate: false
@@ -79,7 +86,7 @@ export default defineEventHandler(async (event) => {
     }
 
     // 2. Genre Condition (if provided)
-   if (genres.trim() !== "") {
+   if (genres.trim() !== "" && !randomBoolean) {
       const queriedGenres = genres.split(",").map(decodeURIComponent).map(g => g.toLowerCase());;
       if (type === "or") {
         where.AND.push({ genres: { some: { name: { in: queriedGenres } } } }); // At least one genre
@@ -115,17 +122,30 @@ export default defineEventHandler(async (event) => {
     // ... (Rest of your code - Prisma query, library/bookmark logic, etc.) ...
     // Main query for novels
     const [novels, totalCount] = await Promise.all([
-      prisma.novel.findMany({
-        where,
-        take: parsedLimit,
-        skip: parsedOffset,
-        orderBy: { [validSortFieldMap[sort]]: order }, // Map sort to database column
-        include: {
-          tags: true,
-          genres: true,
-          language: true
-        }
-      }),
+      !randomBoolean ? 
+        prisma.novel.findMany({
+          where,
+          take: parsedLimit,
+          skip: parsedOffset,
+          orderBy: { [validSortFieldMap[sort]]: order },
+          include: {
+            tags: true,
+            genres: true,
+            language: true
+          }
+        })
+      : 
+        randomPrisma.novel.findMany({
+          where,
+          take: parsedLimit,
+          skip: parsedOffset,
+          orderBy: { [validSortFieldMap[sort]]: order },
+          include: {
+            tags: true,
+            genres: true,
+            language: true
+          }
+        }),
       prisma.novel.count({ where })
     ]);
 

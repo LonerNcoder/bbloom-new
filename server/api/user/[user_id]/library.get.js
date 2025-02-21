@@ -21,9 +21,11 @@ export default defineEventHandler(async (event) => {
                         novel: true
                     },
                     orderBy: { addedAt: 'desc' }
-                }
+                },
+  
             }
         });
+        console.log(libraries);
         // if libraries is empty, create one
         if (libraries.length === 0) {
             const library = await prisma.library.upsert({

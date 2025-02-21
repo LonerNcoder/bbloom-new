@@ -4,7 +4,7 @@
         <ClientOnly>
           <DmsEditor :novel_id="novel_id" :title="title" content="" :isNew=true mode="draft" ></DmsEditor>
         </ClientOnly>
-         <!-- <ExtendEditor></ExtendEditor> -->
+         
     </div>
 
   </template>

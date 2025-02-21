@@ -17,16 +17,21 @@
 
       <template v-else>
         <!-- Default Layout -->
-            <div class="card-main">
-                    <img :src="defaultImage" :alt="novel.title" class="novel-image">
-                    <div class="novel-details novel-details-font">
-                            <h3>{{ novel.title }}</h3>
-                            <div class="novel-info">
-                              <span class="views">Views: {{ novel.views }}</span>
-                              <span class="rating">Rating: {{ novel.rating }}</span>
-                            </div>
-                    </div>
+        <div class="card-main">
+          <div class="image-container">
+            <img :src="defaultImage" :alt="novel.title" class="novel-image">
+            <span v-if="inLibrary" class="library-icon">
+              <Library size="20" />
+            </span>
+          </div>
+          <div class="novel-details novel-details-font">
+            <h3>{{ novel.title }}</h3>
+            <div class="novel-info">
+              <span class="views">Views: {{ novel.views }}</span>
+              <span class="rating">Rating: {{ novel.rating }}</span>
             </div>
+          </div>
+        </div>
 
               <transition name="fade">
                         <div v-show="isExpanded" class="novel-summary">
@@ -47,6 +52,7 @@
 
 <script setup>
 import { ref, onMounted, defineProps, onBeforeUnmount } from 'vue';
+import { Library } from 'lucide-vue-next';
 
 const props = defineProps({
   novel: { type: Object, required: true },
@@ -55,6 +61,7 @@ const props = defineProps({
   bgcolor: { type: Number, default: 2 },
   webMode: { type: String, default: 'safe' },
   lastReadChapter: { type: Number, default: 1 },
+  inLibrary: { type: Boolean, default: false },
 });
 
 
@@ -255,5 +262,24 @@ const randomBgColor = getContentClass(props.bgcolor);
 }
 .card-content-5{
   background-color:var(--card-bg-color-5)
+}
+
+.image-container {
+  position: relative;
+  width: 100%;
+}
+
+.library-icon {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  background-color: rgba(0, 0, 0, 0.6);
+  color: white;
+  padding: 4px;
+  border-radius: 4px;
+  z-index: 5;
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 </style>

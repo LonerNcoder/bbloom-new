@@ -35,6 +35,7 @@
                   :bgcolor="novel.bgcolor"
                   :to="`/novel/${novel.id}`"
                   :webMode="webMode"
+                  :inLibrary="novel.inLibrary"
                 />
               </NovelsGrid>
             </section>
@@ -57,6 +58,7 @@
                   :bgcolor="novel.bgcolor"
                   :to="`/novel/${novel.id}`" 
                   :webMode="webMode"
+                  :inLibrary="novel.inLibrary"  
                 />
               </NovelsGrid>
             </section>
@@ -109,7 +111,7 @@
         <div class="card-header">
         <h2>Random Novels</h2>
         <a class="viewmore-btn">
-                  <button @click="viewMore('random')">Shuffle</button>
+                  <button @click="shuffle">Shuffle</button>
                 </a>
         </div>
         <div class="novel-list vertical-list">
@@ -121,6 +123,7 @@
 
             :to="`/novel/${novel.id}`" 
             :webMode="webMode"
+            :inLibrary="novel.inLibrary"
           />
         </div>
       </section>
@@ -183,7 +186,7 @@ const filteredOriginals = computed(() =>
   }))
 );
 
-const { data: data3, pending: pending3, error: error3 } = useSmartFetch(`${API}genres=random`, { //renamed data to data3
+const { data: data3, pending: pending3, error: error3, refresh: refresh3 } = useSmartFetch(`${API}random=true`, { //renamed data to data3
   enableCache: true,
   cacheTime: 60000,
   headers: headers
@@ -219,6 +222,10 @@ const viewMore = (category) => {
       limit: 30
     }
   })
+}
+const shuffle = () =>{
+  console.log("Shuffling")
+  refresh3()
 }
 const viewTrending = (sort) =>{
   router.push(

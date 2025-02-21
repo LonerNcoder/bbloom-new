@@ -148,6 +148,9 @@ background-color: #b91c1c; /* Darker danger on hover */
   --author-name-text-color: #00A6A6;
   --novel-page-section-bg-color: #ffffff;
 
+  --add-group-btn-text-color: #ffffff;
+  --add-group-btn-bg-color: #000000;
+
   --chapter-body-bg-color: #ffffff;
   --chapter-body-text-color: #000000;
 
@@ -392,6 +395,8 @@ html[data-theme="dark"] {
   --secondary-text-color: #a1a1aa;     /* Zinc-400 */
   --tertiary-text-color: #78286f;      /* Zinc-500 */
   --btn-text-color:var(--primary-text-color);
+  --add-group-btn-text-color: #000000;
+  --add-group-btn-bg-color: #ffffff;
   --btn-color-1:#66005e;
   --btn-color-2: #894480;
   --btn-color-3:#894480;
