@@ -1,4 +1,4 @@
-import { createError, defineEventHandler } from 'h3';
+import { createError, defineEventHandler, getQuery } from 'h3';
 import prisma from "~/prisma/middleware/savedInLibrary.js";
 import { verifyUser } from "~/server/utils";
 
@@ -10,37 +10,39 @@ export default defineEventHandler(async (event) => {
     }
 
     const user = event.context.session.user;
-    //get user libraries, if not exist create one and return everything
-    let libraries = [];
+    const query = getQuery(event);
+    const libraryName = query.name; // Extract query parameter
+
     try {
-        libraries = await prisma.library.findMany({
-            where: { userId: user.id },
+        let libraryFilter = { userId: user.id };
+        if (libraryName) {
+            libraryFilter = { ...libraryFilter, name: libraryName };
+        }
+
+        let libraries = await prisma.library.findMany({
+            where: libraryFilter,
             include: {
                 libraryNovels: {
                     include: {
                         novel: true
                     },
                     orderBy: { addedAt: 'desc' }
-                },
-  
+                }
             }
         });
-        console.log(libraries);
-        // if libraries is empty, create one
-        if (libraries.length === 0) {
-            const library = await prisma.library.upsert({
-                where: { userId: user.id },
-                create: {
+
+        // If no libraries exist, create a default one when no query is used
+        if (libraries.length === 0 && !libraryName) {
+            const library = await prisma.library.create({
+                data: {
                     userId: user.id,
+                    name: "default",
                     createdAt: new Date(),
                     updatedAt: new Date()
                 },
-                update: {},
                 include: {
                     libraryNovels: {
-                        include: {
-                            novel: true
-                        },
+                        include: { novel: true },
                         orderBy: { addedAt: 'desc' }
                     }
                 }
@@ -48,35 +50,42 @@ export default defineEventHandler(async (event) => {
             libraries.push(library);
         }
 
-        // get reading history with the novels in libraries and bookmarks
+        // Extract all novelIds from the user's libraries
+        const novelIds = libraries.flatMap(library => library.libraryNovels.map(ln => ln.novelId));
+
+        if (novelIds.length === 0) {
+            return { statusCode: 200, libraries: [] };
+        }
+
+        // Fetch reading history for those novelIds
         const readingHistory = await prisma.readingHistory.findMany({
             where: {
                 userId: user.id,
-                novelId: { in: libraries.map(l => l.id) }
+                novelId: { in: novelIds }
             }
-        }); 
-        
-        // get bookmarks with the novels in libraries
+        });
+
+        // Fetch bookmarks for those novelIds
         const bookmarks = await prisma.novelBookmark.findMany({
             where: {
                 userId: user.id,
-                novelId: { in: libraries.map(l => l.id) }
+                novelId: { in: novelIds }
             }
-        }); 
-        let formattedLibraryNovels = [];
-        libraries.forEach(library => {
-            library.libraryNovels.forEach(ln => {
-                formattedLibraryNovels.push({
-                    ...ln,
-                    bookmarks: bookmarks.filter(b => b.novelId === ln.novelId),
-                    readingHistory: readingHistory.filter(rh => rh.novelId === ln.novelId)  
-                });
-            });
         });
+
+        // Format library novels with bookmarks and reading history
+        const formattedLibraries = libraries.map(library => ({
+            ...library,
+            libraryNovels: library.libraryNovels.map(ln => ({
+                ...ln,
+                bookmarks: bookmarks.filter(b => b.novelId === ln.novelId),
+                readingHistory: readingHistory.filter(rh => rh.novelId === ln.novelId)
+            }))
+        }));
 
         return { 
             statusCode: 200, 
-            libraries: formattedLibraryNovels
+            libraries: formattedLibraries 
         };
 
     } catch (e) {

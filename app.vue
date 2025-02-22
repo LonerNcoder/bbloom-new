@@ -6,6 +6,8 @@
 </template>
 <script setup>
 // import LoadingAnimation from "~/components/LoadingAnimation.vue";
+  import 'primeicons/primeicons.css'
+
   const nuxtApp = useNuxtApp();
   const loading = ref(true);
 
@@ -23,6 +25,7 @@
   // document.documentElement.style.setProperty('--card-bg-color-3', randomColor);
   // document.documentElement.style.setProperty('--card-bg-color-4', randomColor);
   // document.documentElement.style.setProperty('--card-bg-color-5', randomColor);
+
 
 </script>
 
@@ -153,30 +156,46 @@ background-color: #b91c1c; /* Darker danger on hover */
 
   --chapter-body-bg-color: #ffffff;
   --chapter-body-text-color: #000000;
-
-  --modal-bg-color: #ffffff; 
+  
+  --border-color: #e5e7eb; /* modal input bordr color*/
+  --modal-bg-color: #ffffff;
+  --modal-bg: #ffffff; /* Modal background */
+  --input-bg: #ffffff; /* Input field background */
+  --shadow-color: rgba(0, 0, 0, 0.05); /* Soft shadows */
+  --surface-elevation: 0 8px 32px rgba(0, 0, 0, 0.08); /* Elevation effect */
   --modal-text-color: rgb(17,24,39);
-  --modal-border-color: rgb(229 231 235);
+  --modal-border-color: rgb(229, 231, 235);
   --modal-button-bg-color: #000000;
   --modal-button-text-color: rgb(156,163,175);
-  --modal-button-hover-bg-color: rgb(229 231 235);
+  --modal-button-hover-bg-color: rgb(229, 231, 235);
   --modal-button-border-color: #000000;
-  --modal-button-footer-bg-color: rgb(229 231 235);
-  --modal-button-footer-border-color: rgb(229 231 235);
+  --modal-button-footer-bg-color: rgb(229, 231, 235);
+  --modal-button-footer-border-color: rgb(229, 231, 235);
 
-  --modal-button-1-bg-color: rgb(29 78 216);
+  --modal-button-1-bg-color: rgb(29, 78, 216);
   --modal-button-1-text-color: rgb(255, 255, 255);
-  --modal-button-1-hover-text-color: rgb(255 255 255);
-  --modal-button-1-focus-color: rgb(147 197 253);
-  --modal-button-1-hover-bg-color: rgb(229 231 235);
-  --modal-button-1-border-color: rgb(229 231 235);
+  --modal-button-1-hover-text-color: rgb(255, 255, 255);
+  --modal-button-1-focus-color: rgb(147, 197, 253);
+  --modal-button-1-hover-bg-color: rgb(229, 231, 235);
+  --modal-button-1-border-color: rgb(229, 231 ,235);
 
   --modal-button-2-bg-color: rgb(255, 255, 255);
-  --modal-button-2-text-color: rgb(17 24 39 );
-  --modal-button-2-hover-text-color: rgb(29 78 216);
-  --modal-button-2-hover-bg-color: rgb(243 244 246 );
-  --modal-button-2-border-color: rgb(229 231 235);
-  --modal-button-2-focus-color: rgb(243 244 246);
+  --modal-button-2-text-color: rgb(17, 24, 39 );
+  --modal-button-2-hover-text-color: rgb(29, 78, 216);
+  --modal-button-2-hover-bg-color: rgb(243, 244, 246 );
+  --modal-button-2-border-color: rgb(229, 231, 235);
+  --modal-button-2-focus-color: rgb(243, 244, 246);
+
+  --library-card-border: 1px solid black;
+  --library-card-border-padding: 10px;
+  --library-card-border-radius: 5px;
+
+  --confirm-dialog-bg-color:rgb(255, 255, 255);
+  --cancel-btn-bg-color: rgb(100, 100, 100);
+  --cancel-btn-text-color: rgb(255, 255, 255);
+  --delete-btn-bg-color: red;
+  --delete-btn-text-color: rgb(255, 255, 255);
+
 
   /* color: var(--search-bar-text-color); */
   --foreground-color: #ffffff;        /* Pure white for contrast */
@@ -406,37 +425,51 @@ html[data-theme="dark"] {
   --chapter-body-bg-color: #202020;
   --chapter-body-text-color: #ededed;
 
-  --modal-bg-color: rgb(55 65 81); 
-  --modal-text-color: rgb(255 255 255);
-  --modal-border-color: rgb(75 85 99);
+  --border-color: #acacac; /* modal input bordr color*/
+  --modal-bg-color: rgb(55, 65, 81); 
+  --modal-text-color: rgb(255, 255, 255);
+  --modal-bg: #111827;
+  --input-bg: #161616;
+  --shadow-color: rgba(0, 0, 0, 0.3);
+  --surface-elevation: 0 8px 32px rgba(0, 0, 0, 0.3);
+  --modal-border-color: rgb(75, 85, 99);
   --modal-button-bg-color: #000000;
   --modal-button-text-color: rgb(156,163,175);
-  --modal-button-hover-text-color: rgb(255 255 255);
-  --modal-button-hover-bg-color: rgb(75 85 99);
+  --modal-button-hover-text-color: rgb(255, 255, 255);
+  --modal-button-hover-bg-color: rgb(75, 85, 99);
   --modal-button-border-color: #000000;
-  --modal-button-footer-bg-color: rgb(75 85 99);
+  --modal-button-footer-bg-color: rgb(75, 85, 99);
   
-  --modal-button-1-bg-color: rgb(37 99 235);
+  --modal-button-1-bg-color: rgb(37, 99, 235);
   --modal-button-1-text-color: rgb(255, 255, 255);
-  --modal-button-1-focus-color:  rgb(30 64 175);
-  --modal-button-1-hover-bg-color: rgb(29 78 216);
+  --modal-button-1-focus-color:  rgb(30, 64, 175);
+  --modal-button-1-hover-bg-color: rgb(29, 78, 216);
   --modal-button-1-border-color: #000000;
 
-  --modal-button-2-bg-color: rgb(31 41 55);
-  --modal-button-2-text-color: rgb(156 163 175);
-  --modal-button-2-hover-text-color: rgb(255 255 255);
-  --modal-button-2-border-color:  rgb(229 231 235);
-  --modal-button-2-hover-bg-color: rgb(55 65 81 );
+  --modal-button-2-bg-color: rgb(31, 41, 55);
+  --modal-button-2-text-color: rgb(156, 163, 175);
+  --modal-button-2-hover-text-color: rgb(255, 255, 255);
+  --modal-button-2-border-color:  rgb(229, 231, 235);
+  --modal-button-2-hover-bg-color: rgb(55, 65, 81 );
   --modal-button-2-border-color: #000000;
-  --modal-button-2-focus-color: rgb(55 65 81);
+  --modal-button-2-focus-color: rgb(55, 65, 81);
+
+  --library-card-border: 1px solid white;
+  --library-card-border-padding: 10px;
+  --library-card-border-radius: 5px;
+
+  --confirm-dialog-bg-color:rgb(80, 79, 79);
+  --cancel-btn-bg-color: rgb(100, 100, 100);
+  --cancel-btn-text-color: rgb(255, 255, 255);
+  --delete-btn-bg-color: #1d1d1d;
+  --delete-btn-text-color: white;
 
 
 
   --icon-color-4: #9b5e91;
   --border-color: #3f3f46;  
-  --delete-btn-bg-color: rgb(44, 22, 24);
-  --delete-btn-text-color: rgb(246, 53, 53);
-  --delete-btn-border-color: rgba(246, 53, 53, 0.51);
+
+  /* --delete-btn-border-color: rgba(246, 53, 53, 0.51); */
   --border-color: #334155;            /* Dark gray with blue undertone */
   --write-card-bg-color:var(--background-color);  
   /* #00A6A6,#EFCA08,#F49F0A,#F08700 */

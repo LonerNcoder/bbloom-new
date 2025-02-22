@@ -19,7 +19,7 @@
     "@nuxt/ui": "2.21.0",
     "@nuxtjs/tailwindcss": "^6.13.1",
     "@pinia/nuxt": "^0.10.1",
-    "@primevue/nuxt-module": "^4.2.5",
+    "@primeuix/themes": "^1.0.0-rc.1",
     "@prisma/client": "^6.2.1",
     "@radix-icons/vue": "^1.0.0",
     "axios": "^1.7.9",
@@ -48,6 +48,8 @@
     "openai": "^4.82.0",
     "pinia": "^3.0.1",
     "pinia-plugin-persistedstate": "^4.2.0",
+    "primeicons": "^7.0.0",
+    "primevue": "^4.2.5",
     "prisma-extension-random": "^0.2.2",
     "radix-vue": "^1.9.13",
     "requirejs": "^2.3.7",
@@ -66,6 +68,7 @@
     "vue3-smooth-dnd": "^0.0.6"
   },
   "devDependencies": {
+    "@primevue/nuxt-module": "^4.2.5",
     "shadcn-vue": "^0.11.3",
     "vite-plugin-vuetify": "^2.1.0",
     "vuetify": "^3.7.12"

@@ -1,21 +1,34 @@
 <template>
-    <div class="modal-overlay" @click.self="$emit('close')">
-      <div class="modal">
-        <div class="modal-header">
-          <slot name="header"></slot>
-        </div>
-        <div class="modal-body">
-          <slot name="body"></slot>
-        </div>
-        <div class="modal-footer">
-          <slot name="footer"></slot>
-        </div>
+  <div class="modal-overlay" @click.self="$emit('close')">
+    <div class="modal">
+      <!-- Close Button (Top Right) -->
+      <button class="modal-close" @click="$emit('close')"><X/></button>
+
+      <!-- Modal Header -->
+      <div class="modal-header">
+        <slot name="header"></slot>
+      </div>
+
+      <!-- Modal Body -->
+      <div class="modal-body">
+        <slot name="body"></slot>
+      </div>
+
+      <!-- Modal Footer -->
+      <div class="modal-footer">
+        <button class="btn-cancel" @click="$emit('close')">Cancel</button>
+        <slot name="footer"></slot>
       </div>
     </div>
-  </template>
-<script setup></script>
-<style scoped>
+  </div>
+</template>
 
+<script setup>
+import {X} from "lucide-vue-next"
+</script>
+
+<style scoped>
+/* Overlay */
 .modal-overlay {
   position: fixed;
   top: 0;
@@ -29,40 +42,79 @@
   z-index: 1100;
 }
 
+/* Modal Box */
 .modal {
-  background-color: var(--modal-bg);
+  background-color: var(--modal-bg, #fff);
   border-radius: 12px;
   width: 500px;
   max-width: 90%;
   max-height: 90vh;
-  box-shadow: var(--surface-elevation);
-  border: 1px solid var(--border-color);
-}
-.modal-header {
-  padding: 16px;
-  border-bottom: 1px solid var(--border-color);
-  background-color: var(--bg-secondary);
-  border-radius: 12px 12px 0 0;
+  box-shadow: var(--surface-elevation, 0 4px 10px rgba(0, 0, 0, 0.2));
+  border: 1px solid var(--border-color, #ddd);
+  display: flex;
+  flex-direction: column;
+  position: relative;
+  padding: 20px;
 }
 
-.modal-header h3 {
-  margin: 0;
+
+
+/* Close Button */
+.modal-close {
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  background: none;
+  border: none;
   font-size: 18px;
-  color: var(--text-primary);
+  color: var(--text-secondary, #555);
+  cursor: pointer;
 }
 
+.modal-close:hover {
+  color: var(--text-primary, #000);
+}
+
+/* Header */
+.modal-header {
+  font-size: 20px;
+  font-weight: bold;
+  color: var(--text-primary, #222);
+  margin-bottom: 10px;
+  border-bottom: 1px solid var(--border-color, #ddd);
+}
+
+/* Body */
 .modal-body {
-  padding: 16px;
-  color: var(--text-primary);
+  flex-grow: 1;
+  color: var(--text-primary, #444);
+  padding: 10px 0;
 }
 
+/* Footer */
 .modal-footer {
-  padding: 16px;
-  border-top: 1px solid var(--border-color);
-  background-color: var(--bg-secondary);
-  border-radius: 0 0 12px 12px;
   display: flex;
   justify-content: flex-end;
   gap: 8px;
+  margin-top: 15px;
+  border-top: 1px solid var(--border-color, #ddd);
+  padding-top: 10px;
 }
+
+/* Buttons */
+.btn-cancel {
+  background-color: #ccc;
+  color: #333;
+  padding: 8px 16px;
+  border-radius: 6px;
+  border: none;
+  cursor: pointer;
+}
+
+.btn-cancel:hover {
+  background-color: #bbb;
+}
+
+
+
 </style>

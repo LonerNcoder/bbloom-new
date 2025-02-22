@@ -86,37 +86,6 @@
           <button @click="closeModal">Custom Close</button>
        </template>
     </ChatBox> -->
+    <ModernChatBotStylish />
   </template>
   
-  <script setup>
-  import { ref, watch } from 'vue';
-  import ChatBox from '~/customcomponents/ChatBox.vue';
-  
-  const isChatFullscreen = ref(false);
-  const api_key = useRuntimeConfig().public.defaultKey
-  const myApiKey = ref(api_key);
-  const userInputVal = ref('');
-  
-  const myCustomResponseFunction = async (chatHistory, systemPrompt) => {
-    // Implement YOUR custom logic here.  This is just an example.
-    console.log('Using custom response function!', chatHistory);
-      await new Promise(resolve => setTimeout(resolve, 500)); // Simulate delay
-  
-    return {
-      sender: 'bot',
-      text: `Custom response!  Last user message: ${chatHistory[chatHistory.length - 1]?.text || 'No messages'}`,
-      timestamp: Date.now(),
-    };
-  };
-  const sendMessageWrapper = () =>{
-      userInputVal.value = userInputVal.value;
-      myCustomResponseFunction([{text: userInputVal.value}])
-      userInputVal.value = '';
-  
-  }
-  </script>
-  <style>
-  .my-custom-left-panel{
-      background-color: antiquewhite !important;
-  }
-  </style>

@@ -8,6 +8,7 @@
             <NovelAlbumCard
                 v-for="item in items"
                 :key="item"
+                :id="item.id"
                 :title="item.title"
                 :author="item.author"
                 :image="item.coverImage"

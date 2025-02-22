@@ -1,6 +1,12 @@
 // https://nuxt.com/docs/api/configuration/nuxt-config
 import vuetify, { transformAssetUrls } from 'vite-plugin-vuetify'
-export default defineNuxtConfig({
+import type { NuxtConfig } from '@nuxt/schema'
+import Aura from '@primeuix/themes/aura';
+// Remove invalid import since @primevue/themes doesn't exist
+// The Aura theme should be configured differently in PrimeVue
+
+// Add type annotation to ensure proper typing
+const config: NuxtConfig = {
   devtools: { enabled: true },
   modules: [
     "@nuxt/ui",
@@ -8,6 +14,7 @@ export default defineNuxtConfig({
     'radix-vue/nuxt',
     '@pinia/nuxt',
     'shadcn-nuxt',
+    '@primevue/nuxt-module',
     (_options, nuxt) => {
       nuxt.hooks.hook('vite:extendConfig', (config) => {
         // @ts-expect-error
@@ -16,6 +23,25 @@ export default defineNuxtConfig({
     },
     'pinia-plugin-persistedstate/nuxt',
   ],
+  // @ts-ignore - Ignore type checking for primevue config since types aren't properly exposed
+  primevue: {
+    options: {
+      ripple: true,
+      inputVariant: 'filled',
+      theme: {
+        preset: Aura,
+        options: {
+          prefix: 'p',
+          darkModeSelector: '.primevue-dark',
+          cssLayer: {
+            name: 'primevue',
+            order: 'app-styles, primevue, another-css-library'
+          }
+        }
+      }
+    },
+    autoImport: true,
+  },
   devServer: {
     port: 3000,
     host: '0.0.0.0',
@@ -69,4 +95,6 @@ export default defineNuxtConfig({
   },
 
   compatibilityDate: '2024-11-01',
-})
+}
+
+export default defineNuxtConfig(config)
