@@ -103,8 +103,8 @@ import {X} from "lucide-vue-next"
 
 /* Buttons */
 .btn-cancel {
-  background-color: #ccc;
-  color: #333;
+  background-color: var(--cancel-btn-bg-color);
+  color: var(--cancel-btn-text-color);
   padding: 8px 16px;
   border-radius: 6px;
   border: none;

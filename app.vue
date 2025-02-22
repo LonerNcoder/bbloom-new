@@ -195,6 +195,13 @@ background-color: #b91c1c; /* Darker danger on hover */
   --cancel-btn-text-color: rgb(255, 255, 255);
   --delete-btn-bg-color: red;
   --delete-btn-text-color: rgb(255, 255, 255);
+  --create-btn-bg-color: rgb(17, 138, 17);
+  --create-btn-text-color: white;
+  --close-btn-bg-color: rgb(100, 100, 100);
+  --close-btn-text-color: rgb(255, 255, 255);
+
+  --dropdown-bg-color: rgb(255, 255, 255);
+  --dropdown-text-color:rgb(0, 0, 0);
 
 
   /* color: var(--search-bar-text-color); */
@@ -459,10 +466,18 @@ html[data-theme="dark"] {
   --library-card-border-radius: 5px;
 
   --confirm-dialog-bg-color:rgb(80, 79, 79);
-  --cancel-btn-bg-color: rgb(100, 100, 100);
+  --cancel-btn-bg-color: #8e3939;
   --cancel-btn-text-color: rgb(255, 255, 255);
-  --delete-btn-bg-color: #1d1d1d;
+  --delete-btn-bg-color: #750909;
   --delete-btn-text-color: white;
+  --create-btn-bg-color: #0f5a0f;
+  --create-btn-text-color: white;
+  --close-btn-bg-color: rgb(108 108 108);
+  --close-btn-text-color: #000000;
+
+  --dropdown-bg-color: rgb(34, 34, 34);
+  --dropdown-text-color:white;
+
 
 
 

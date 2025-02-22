@@ -3,6 +3,7 @@
 
     <!-- Navigation Bar -->
     <div class="flex justify-between items-center p-4 sticky top-0 z-10">
+      <!-- Library Tabs -->
       <div class="flex gap-1 bg-[--section-bg-color] p-1 rounded-lg">
         <button
           v-for="library in libraries"
@@ -19,45 +20,48 @@
         </button>
       </div>
       
-      <!-- Delete Library Custom Dropdown Button -->
-      <div class="relative">
+      <!-- Grouped Delete and Add Buttons -->
+      <div class="flex gap-3 items-center">
+        <!-- Delete Library Custom Dropdown Button -->
+        <div class="p-1 relative">
+          <button 
+            @click="toggleDropdown"
+            class="flex items-center gap-2 bg-[--add-group-btn-bg-color] hover:bg-[--add-group-btn-bg-color] text-[--add-group-btn-text-color] dark:hover:bg-gray-200 px-4 py-2 rounded-md text-sm transition-all duration-200"
+          >
+            <TrashIcon size="16" />
+            <ChevronDown size="16" />
+          </button>
+          <div v-if="dropdownOpen" class="absolute right-0 mt-2 bg-[--dropdown-bg-color] shadow-lg rounded-md z-20">
+            <ul class="py-1">
+              <li 
+                v-for="library in libraries" 
+                :key="library.id" 
+                class="flex items-center justify-between gap-3 px-4 py-1 hover:bg-gray-100 cursor-pointer"
+              >
+                <span>{{ library.name }}</span>
+                <button 
+                  @click.stop="confirmDelete(library)" 
+                  class="text-red-500 hover:text-red-700"
+                >
+                  <TrashIcon size="14" />
+                </button>
+              </li>
+            </ul>
+          </div>
+        </div>
+
+        <!-- Add Library Button -->
         <button 
-          @click="toggleDropdown"
+          @click="showModal = true"
           class="flex items-center gap-2 bg-[--add-group-btn-bg-color] hover:bg-[--add-group-btn-bg-color] text-[--add-group-btn-text-color] dark:hover:bg-gray-200 px-4 py-2 rounded-md text-sm font-medium transition-all duration-200"
         >
-          Delete Library
-          <ChevronDown />
+          <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <circle cx="12" cy="12" r="10" stroke="currentColor" stroke-width="2" />
+            <path d="M12 8v8M8 12h8" stroke="currentColor" stroke-width="2" stroke-linecap="round" />
+          </svg>
+          <Library size="16" />
         </button>
-        <div v-if="dropdownOpen" class="absolute right-0 mt-2 w-56 bg-white shadow-lg rounded-md z-20">
-          <ul class="py-1">
-            <li 
-              v-for="library in libraries" 
-              :key="library.id" 
-              class="flex items-center justify-between px-4 py-2 hover:bg-gray-100 cursor-pointer"
-            >
-              <span>{{ library.name }}</span>
-              <button 
-                @click.stop="confirmDelete(library)" 
-                class="text-red-500 hover:text-red-700"
-              >
-                <TrashIcon />
-              </button>
-            </li>
-          </ul>
-        </div>
       </div>
-
-      <!-- Add Library Button -->
-      <button 
-        @click="showModal = true"
-        class="flex items-center gap-2 bg-[--add-group-btn-bg-color] hover:bg-[--add-group-btn-bg-color] text-[--add-group-btn-text-color] dark:hover:bg-gray-200 px-4 py-2 rounded-md text-sm font-medium transition-all duration-200"
-      >
-        <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-          <circle cx="12" cy="12" r="10" stroke="currentColor" stroke-width="2" />
-          <path d="M12 8v8M8 12h8" stroke="currentColor" stroke-width="2" stroke-linecap="round" />
-        </svg>
-        Add Library
-      </button>
     </div>
 
     <!-- Content Area -->
@@ -92,7 +96,7 @@
       <template #footer>
         <button 
           @click="createLibrary" 
-          class="px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600"
+          class="px-4 py-2 bg-[--create-btn-bg-color] text-[--create-btn-text-color] rounded-md"
         >
           Create
         </button>
@@ -108,9 +112,8 @@
 import { ref, computed, watchEffect, nextTick, onUnmounted } from 'vue';
 import ConfirmDialog from 'primevue/confirmdialog';
 import { useConfirm } from 'primevue/useconfirm';
-import { ChevronDown, TrashIcon } from 'lucide-vue-next';
+import { ChevronDown, TrashIcon, Library } from 'lucide-vue-next';
 import { PrimeIcons } from '@primevue/core/api';
-
 
 const confirm = useConfirm();
 
@@ -199,6 +202,7 @@ const createLibrary = async () => {
 
   newLibraryName.value = '';
 };
+
 // Function to confirm and delete a library
 const confirmDelete = (library) => {
   confirm.require({
@@ -246,11 +250,16 @@ onUnmounted(() => {
 </script>
 
 <style>
-.p-dialog.p-component.p-confirmdialog{
+.p-dialog.p-component.p-confirmdialog {
   padding: 0.5rem 2rem 1rem 2rem;
+  background-color: var(--modal-bg);
 }
-.p-dialog-header{
+.p-dialog-header {
   margin-bottom: 3rem;
+  color: var(--modal-text-color, #222);
+}
+.p-dialog-content {
+  color: var(--text-secondary, #555);
 }
 .p-dialog-footer {
   margin-bottom: 1rem;
@@ -265,12 +274,11 @@ onUnmounted(() => {
   background-color: var(--delete-btn-bg-color);
   color: var(--delete-btn-text-color);
   font-size: 1rem;
-
 }
-.p-button.p-component.p-confirmdialog-reject-button.p-button-secondary{
+.p-button.p-component.p-confirmdialog-reject-button.p-button-secondary {
   padding: 0.25rem 0.5rem;
-  background-color: var(--cancel-btn-bg-color);
-  color: var(--cancel-btn-text-color);
+  background-color: var(--close-btn-bg-color);
+  color: var(--close-btn-text-color);
   font-size: 1rem;
 }
 </style>

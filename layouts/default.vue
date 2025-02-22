@@ -6,7 +6,7 @@
       >
           <!-- <div class="max-w-7xl mx-auto"> -->
           <div class="mx-auto">
-              <div class="flex items-center h-16">
+              <div class="flex items-center h-10">
                   <!-- Logo -->
                   <div class="flex-shrink-0 pl-6">
                       <div class="logo-text" @click="navigateTo('/')">
