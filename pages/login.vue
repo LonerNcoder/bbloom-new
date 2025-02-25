@@ -294,10 +294,11 @@ const handleLogin = async () => {
         sessionToken: data.sessionToken,
         accessToken: data.accessToken,
         apiKey: data.apiKey,
-        loggedIn: true
+        loggedIn: true,
+        libraries: data.libraries
       }
       userStore.setUserData(userData)
-      await $store.setUserData(userData)
+      await $store.handleLogin(userData)
       router.push('/')
     } else {
       console.log(response)

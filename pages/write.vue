@@ -1,308 +1,272 @@
 <template>
   <LoadingAnimation v-if="loading"></LoadingAnimation>
   <div>
-  <div class="relative">
-    <main class="main-content">
-      <div class="novels-container">
-        <div class="card">
-          <section class="continue-writing card-body">
-            <div class="card-header">
-              <h2>{{ 'Continue Writing' }}</h2>
-              <a class="viewmore-btn"><button @click="viewMore('continueSeries')">{{ 'View More' }}</button></a>
-            </div>
-            <NovelsGrid class="novel-list">
-              <NovelCard v-for="novel in novels" :key="novel.id" :novel="novel" :to="`/edit/${novel.id}`" />
-            </NovelsGrid>
-          </section>
-        </div>
-
-        <div class="card">
-          <section class="finished card-body">
-            <div class="card-header">
-              <h2>{{ 'Finished' }}</h2>
-              <a class="viewmore-btn"><button @click="viewMore('finishedSeries')">{{ 'View More' }}</button></a>
-            </div>
-            <NovelsGrid class="novel-list">
-              <NovelCard v-for="novel in novels" :key="novel.id" :novel="novel" :to="`/edit/${novel.id}`" />
-            </NovelsGrid>
-          </section>
-        </div>
-
-        <div class="card">
-          <section class="published card-body">
-            <div class="card-header">
-              <h2>{{ 'Published' }}</h2>
-              <a class="viewmore-btn"><button @click="viewMore('publishedSeries')">{{ 'View More' }}</button></a>
-            </div>
-            <NovelsGrid class="novel-list">
-              <NovelCard v-for="novel in novels" :key="novel.id" :novel="novel" :to="`/edit/${novel.id}`" />
-            </NovelsGrid>
-          </section>
-        </div>
-      </div>
-
-      <!-- Floating Action Button -->
-       <div>
-        <div class="fab-container" :class="{ 'fab-active': showFabMenu }">
-        <button class="fab-main" @click="toggleFabMenu" :class="{ 'rotate': showFabMenu }">
-          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="w-6 h-6">
-            <path d="M17 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V5a2 2 0 0 0-2-2Z" />
-            <path d="M9 3v18" />
-            <path d="m14 8 2 2-2 2" />
-          </svg>
-        </button>
-        
-        <div class="fab-menu" :class="{ 'show-menu': showFabMenu }">
-          <button class="fab-item create-btn" @click="showNewBookForm = true">
-            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="w-5 h-5">
-              <path d="M12 5v14M5 12h14" />
-            </svg>
-            <span>Compose</span>
-          </button>
-          
-          <button class="fab-item upload-btn" @click="showUploadForm = true">
-            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="w-5 h-5">
-              <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
-              <polyline points="17 8 12 3 7 8" />
-              <line x1="12" y1="3" x2="12" y2="15" />
-            </svg>
-            <span>Upload</span>
-          </button>
-        </div>
-        </div>
-      </div>
-
-          <!-- New Book Form Dialog -->
-    <div v-if="showNewBookForm" class="dialog-overlay" @click="closeNewBookForm">
-      <div class="dialog-content" @click.stop>
-        <div class="dialog-header">
-          <h3>{{ 'Compose A New Book' }}</h3>
-          <button class="close-btn" @click="closeNewBookForm">×</button>
-        </div>
-        <form @submit.prevent="handleNewBook" class="space-y-4">
-          <div class="form-group">
-            <label for="bookTitle">{{ 'Book Title' }}</label>
-            <input
-              id="bookTitle"
-              v-model="bookData.title"
-              type="text"
-              required
-              class="form-input"
-            />
+    <div class="relative">
+      <main class="main-content">
+        <div class="novels-container">
+          <div class="card">
+            <section class="continue-writing card-body">
+              <div class="card-header">
+                <h2>{{ 'Ongoing' }}</h2>
+              </div>
+              <NovelsGrid class="novel-list">
+                <NovelCard v-for="novel in filteredOngoing" name="Continue Writing" :key="novel.id" :novel="novel" :to="`/edit/${novel.id}`" />
+              </NovelsGrid>
+            </section>
           </div>
-          <!-- <div class="form-group">
-            <label for="genre">{{ 'Genre' }}</label>
-            <select 
-              v-model="bookData.genre"
-              required
-              class="form-select"
-            >
-              <option value="">{{ 'Select genre' }}</option>
-              <option value="fiction">{{ 'Fiction' }}</option>
-              <option value="non-fiction">{{ 'Non-Fiction' }}</option>
-              <option value="fantasy">{{ 'Fantasy' }}</option>
-              <option value="mystery">{{ 'Mystery' }}</option>
-            </select>
-          </div> -->
-          <button type="submit" class="btn-submit">
-            {{ 'Create Book' }}
-          </button>
-        </form>
-      </div>
-    </div>
 
-    <!-- Upload Book Dialog -->
-    <div v-if="showUploadForm" class="dialog-overlay" @click="closeUploadForm">
-      <div class="dialog-content" @click.stop>
-        <div class="dialog-header">
-          <h3>{{ 'Upload EPUB Book' }}</h3>
-          <button class="close-btn" @click="closeUploadForm">×</button>
+          <div class="card">
+            <section class="hiatus card-body">
+              <div class="card-header">
+                <h2>{{ 'Hiatus' }}</h2>
+              </div>
+              <NovelsGrid class="novel-list">
+                <NovelCard v-for="novel in filteredHiatus" name="Continue Writing" :key="novel.id" :novel="novel" :to="`/edit/${novel.id}`" />
+              </NovelsGrid>
+            </section>
+          </div>
+
+          <div class="card">
+            <section class="finished card-body">
+              <div class="card-header">
+                <h2>{{ 'Completed' }}</h2>
+              </div>
+              <NovelsGrid class="novel-list">
+                <NovelCard v-for="novel in filteredCompleted" name="Continue Writing" :key="novel.id" :novel="novel" :to="`/edit/${novel.id}`" />
+              </NovelsGrid>
+            </section>
+          </div>
+
+          <div class="card">
+            <section class="published card-body">
+              <div class="card-header">
+                <h2>{{ 'Published' }}</h2>
+              </div>
+              <NovelsGrid class="novel-list">
+                <NovelCard v-for="novel in filteredPublished" name="Continue Writing" :key="novel.id" :novel="novel" :to="`/edit/${novel.id}`" />
+              </NovelsGrid>
+            </section>
+          </div>
+
+          <div class="card">
+            <section class="private-novels card-body">
+              <div class="card-header">
+                <h2>{{ 'Private Novels' }}</h2>
+              </div>
+              <NovelsGrid class="novel-list">
+                <NovelCard v-for="novel in filteredPrivate" name="Continue Writing" :key="novel.id" :novel="novel" :to="`/edit/${novel.id}`" />
+              </NovelsGrid>
+            </section>
+          </div>
         </div>
-        <div class="upload-area" :class="{ 'uploading': uploading }">
-          <div v-if="!uploading && !uploadComplete" 
-               class="upload-prompt"
-               @click="triggerFileInput"
-          >
-            <span class="icon">↑</span>
-            <span>{{ 'Click to upload EPUB file' }}</span>
-            <input
-              ref="fileInput"
-              type="file"
-              accept=".epub"
-              class="hidden"
-              @change="handleFileUpload"
-            />
-            <button 
-                  type="button" 
-                  class="btn-upload"
-                  @click="$refs.fileInput.click()"
-                >
+
+        <!-- Floating Action Button -->
+        <div>
+          <div class="fab-container" :class="{ 'fab-active': showFabMenu }">
+            <button class="fab-main" @click="toggleFabMenu" :class="{ 'rotate': showFabMenu }">
+              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                stroke-width="2" class="w-6 h-6">
+                <path d="M17 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V5a2 2 0 0 0-2-2Z" />
+                <path d="M9 3v18" />
+                <path d="m14 8 2 2-2 2" />
+              </svg>
+            </button>
+
+            <div class="fab-menu" :class="{ 'show-menu': showFabMenu }">
+              <button class="fab-item create-btn" @click="showNewBookForm = true">
+                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                  stroke-width="2" class="w-5 h-5">
+                  <path d="M12 5v14M5 12h14" />
+                </svg>
+                <span>Compose</span>
+              </button>
+
+              <button class="fab-item upload-btn" @click="showUploadForm = true">
+                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                  stroke-width="2" class="w-5 h-5">
+                  <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
+                  <polyline points="17 8 12 3 7 8" />
+                  <line x1="12" y1="3" x2="12" y2="15" />
+                </svg>
+                <span>Upload</span>
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <!-- New Book Form Dialog -->
+        <div v-if="showNewBookForm" class="dialog-overlay" @click="closeNewBookForm">
+          <div class="dialog-content" @click.stop>
+            <div class="dialog-header">
+              <h3>{{ 'Compose A New Book' }}</h3>
+              <button class="close-btn" @click="closeNewBookForm">×</button>
+            </div>
+            <form @submit.prevent="handleNewBook" class="space-y-4">
+              <div class="form-group">
+                <label for="bookTitle">{{ 'Book Title' }}</label>
+                <input id="bookTitle" v-model="bookData.title" type="text" required class="form-input" />
+              </div>
+              <button type="submit" class="btn-submit">
+                {{ 'Create Book' }}
+              </button>
+            </form>
+          </div>
+        </div>
+
+        <!-- Upload Book Dialog -->
+        <div v-if="showUploadForm" class="dialog-overlay" @click="closeUploadForm">
+          <div class="dialog-content" @click.stop>
+            <div class="dialog-header">
+              <h3>{{ 'Upload EPUB Book' }}</h3>
+              <button class="close-btn" @click="closeUploadForm">×</button>
+            </div>
+            <div class="upload-area" :class="{ 'uploading': uploading }">
+              <div v-if="!uploading && !uploadComplete" class="upload-prompt" @click="triggerFileInput">
+                <span class="icon">↑</span>
+                <span>{{ 'Click to upload EPUB file' }}</span>
+                <input ref="fileInput" type="file" accept=".epub" class="hidden" @change="handleFileUpload" />
+                <button type="button" class="btn-upload" @click="$refs.fileInput.click()">
                   {{ 'Select File' }}
                 </button>
-          </div>
-          <div v-if="uploading" class="upload-status">
-            <div class="spinner"></div>
-            <span>{{ 'Uploading...' }}</span>
-          </div>
-          <div v-if="uploadComplete" class="upload-status success">
-            <span class="icon">✓</span>
-            <span>{{ 'Upload Complete!' }}</span>
+              </div>
+              <div v-if="uploading" class="upload-status">
+                <div class="spinner"></div>
+                <span>{{ 'Uploading...' }}</span>
+              </div>
+              <div v-if="uploadComplete" class="upload-status success">
+                <span class="icon">✓</span>
+                <span>{{ 'Upload Complete!' }}</span>
+              </div>
+            </div>
           </div>
         </div>
-      </div>
+      </main>
     </div>
-    </main>
-    </div>
-
   </div>
 </template>
 
 <script setup>
 import NovelCard from '~/components/NovelCard.vue';
-import { ref, computed, onMounted} from 'vue';
-import { useRouter } from 'vue-router'
-import { openDB } from 'idb';
-import { Utensils } from 'lucide-vue-next';
-// import { getSessionToken, getApiKey, getUserId } from '../utils/utils';
-import { EPub } from 'epub2';
-// import { promises as fs } from 'fs';
-// definePageMeta({
-//   middleware: 'auth',
-// });
-    const searchQuery = ref('');
-    const { $store } = useNuxtApp();
-    const novels = ref([]);
-    const error = ref(null);
-    const loading = ref(true);
-    const showNewBookForm = ref(false);
-    const showUploadForm = ref(false);
-    const uploading = ref(false);
-    const uploadComplete = ref(false);
-    var API = useRuntimeConfig().public.baseSafeAPI
-    // const bookData = ref({ name: '', genre: '' });
-    const bookData = ref({ name: '' }); //only allow bookname at first as we can classify genre later
-    const router = useRouter();
+import { ref, computed, onMounted } from 'vue';
+import { useRouter } from 'vue-router';
 
-    const filteredcontinueSeries = computed(() => 
-      novels.value.filter(n => n.category === 'continueSeries' && 
-      n.title.toLowerCase().includes(searchQuery.value.toLowerCase()))
-    );
-    
-    const filteredfinished = computed(() => 
-      novels.value.filter(n => n.category === 'finished' && 
-      n.title.toLowerCase().includes(searchQuery.value.toLowerCase()))
-    );
-    
-    const filteredRandomNovels = computed(() => 
-      novels.value.filter(n => n.category === 'randomNovels' && 
-      n.title.toLowerCase().includes(searchQuery.value.toLowerCase()))
-    );
-    
-    const filteredRanking = computed(() => 
-      novels.value.filter(n => n.category === 'novelsPublished' && 
-      n.title.toLowerCase().includes(searchQuery.value.toLowerCase()))
-    );
+const novels = ref([]);
+const error = ref(null);
+const loading = ref(true);
+const API = useRuntimeConfig().public.baseSafeAPI;
+const userStore = useUserStore()
+const router = useRouter();
+const { $fetchWithCache, $store } = useNuxtApp()
 
-    const filterNovels = () => {
-      // filtering is done in computed properties
-    };
+const showNewBookForm = ref(false);
+const showUploadForm = ref(false);
+const uploading = ref(false);
+const uploadComplete = ref(false);
+const bookData = ref({ title: '' });
 
-    const viewMore = (category) => {
-      console.log("view more clicked for category", category);
-    };
-
-    const closeNewBookForm = () => {
-      showNewBookForm.value = false;
-      bookData.value = { title: '', genre: '' };
-    };
-
-    const closeUploadForm = () => {
-      showUploadForm.value = false;
-      uploading.value = false;
-      uploadComplete.value = false;
-    };
-
-    const handleNewBook = async () => {
-      try {
-
-        const headers = await $store.getNormalHeaders()
-
-        // Add your book creation logic here
-        const response = await $fetch('${API}create/novel', {
-          method: 'POST',
-          headers: headers,
-          body: JSON.stringify(bookData.value),
-        });
-
-        if (response.statusCode !== 200) {
-          throw new Error(response.statusText);
-        }else{
-          novels.value.unshift(response.body);
-          router.push('/edit/'+response.body.id);
-          closeNewBookForm();
-        }
-      } catch (error) {
-        alert('Error creating book: '+ error);
-      }
-    };
-
-    const handleFileUpload = async (event) => {
-      const file = event.target.files[0];
-      if (file && file.type === 'application/epub+zip') {
-        uploading.value = true;
-        
-        try {
-            const formData = new FormData();
-            formData.append('file', file);
-            const headers = await $store.getFormHeaders()
-            console.log(headers)
-
-            const response = await $fetch(`${API}upload/epub`, {
-              method: 'POST',
-              headers: headers,
-              body: formData,
-            });
-
-            if (!response.statusCode === 200) {
-              throw new Error('Failed to upload file');
-            }
-
-            const data = await response.body;
-            console.log('File uploaded:', data);
-
-            uploading.value = false;
-            uploadComplete.value = true;
-
-            setTimeout(() => {
-              closeUploadForm();
-              router.push('/edit/' + data.id);
-            }, 500);
-        
-          } catch (error) {
-            alert('Error uploading file:', error);
-            uploading.value = false;
-        }
-      }
-    };
-
-    onMounted(async () => {
-      try {
-        const userId = await $store.getUserId()
-        const data = await $fetch(`${API}user/${userId}/novels`);
-        novels.value = data.novels;
-      } catch (err) {
-        error.value = err.message || 'Failed to fetch novels';
-        console.error(err);
-      } finally {
-        loading.value = false;
-      }
-    });
-// ... Previous script code remains the same, just add:
 const showFabMenu = ref(false);
 const toggleFabMenu = () => {
   showFabMenu.value = !showFabMenu.value;
 };
 
+const filteredOngoing = computed(() => novels.value.filter(n => n.status?.toLowerCase() === 'ongoing'));
+const filteredHiatus = computed(() => novels.value.filter(n => n.status?.toLowerCase() === 'hiatus'));
+const filteredCompleted = computed(() => novels.value.filter(n => n.status?.toLowerCase() === 'completed'));
+const filteredPublished = computed(() => novels.value.filter(n => !n.isPrivate));
+const filteredPrivate = computed(() => novels.value.filter(n => n.isPrivate));
+
+const closeNewBookForm = () => {
+  showNewBookForm.value = false;
+  bookData.value = { title: '' };
+};
+
+const closeUploadForm = () => {
+  showUploadForm.value = false;
+  uploading.value = false;
+  uploadComplete.value = false;
+};
+
+const handleNewBook = async () => {
+  try {
+    const headers = await $store.getNormalHeaders()
+
+    const response = await $fetch(`${API}create/novel`, {
+      method: 'POST',
+      headers: headers,
+      body: JSON.stringify(bookData.value),
+    });
+
+    if (response.statusCode !== 200) {
+      throw new Error(response.statusText);
+    } else {
+      //Assuming response has a body that's the created novel.
+      //Unshifting the novel object.
+      novels.value.unshift(response.body);  
+      router.push('/edit/' + response.body.id);
+      closeNewBookForm();
+    }
+  } catch (error) {
+    alert('Error creating book: ' + error);
+  }
+};
+const triggerFileInput = () => {
+  // You can access the file input using this.$refs.fileInput
+  // For example, to trigger a click:
+  if (fileInput.value) {
+    fileInput.value.click();
+  }
+};
+
+const handleFileUpload = async (event) => {
+  const file = event.target.files[0];
+  if (file && file.type === 'application/epub+zip') {
+    uploading.value = true;
+
+    try {
+      const formData = new FormData();
+      formData.append('file', file);
+      const headers = await $store.getFormHeaders()
+
+      const response = await $fetch(`${API}upload/epub`, {
+        method: 'POST',
+        headers: headers,
+        body: formData,
+      });
+
+      if (!response.statusCode === 200) {
+        throw new Error('Failed to upload file');
+      }
+
+      const data = response.body; //removed await
+      console.log('File uploaded:', data);
+
+      uploading.value = false;
+      uploadComplete.value = true;
+
+      setTimeout(() => {
+        closeUploadForm();
+        router.push('/edit/' + data.id);
+      }, 500);
+
+    } catch (error) {
+      alert('Error uploading file:', error);
+      uploading.value = false;
+    }
+  }
+};
+
+onMounted(async () => {
+  try {
+    const userId = userStore.id
+    const data = await $fetchWithCache(`${API}user/${userId}/novels`);
+    novels.value = data.novels;
+  } catch (err) {
+    error.value = err.message || 'Failed to fetch novels';
+    console.error(err);
+  } finally {
+    loading.value = false;
+  }
+});
 </script>
 
 <style scoped>
@@ -347,6 +311,7 @@ const toggleFabMenu = () => {
   cursor: pointer;
   font-size: 14px;
 }
+
 /* Card body styling */
 .card-body {
   border-radius: 8px;
@@ -355,6 +320,7 @@ const toggleFabMenu = () => {
   background-color: var(--section-bg-color);
 
 }
+
 /* Floating Action Button styles */
 .fab-container {
   position: fixed;
@@ -366,7 +332,7 @@ const toggleFabMenu = () => {
 .fab-main {
   width: 3.5rem;
   height: 3.5rem;
-  background: #4a5568;
+  background-color: var(--btn-color-4);
   border-radius: 50%;
   display: flex;
   align-items: center;
@@ -464,6 +430,7 @@ const toggleFabMenu = () => {
   align-items: center;
   z-index: 50;
 }
+
 .dialog-content {
   background-color: white;
   padding: 1.5rem;
@@ -489,20 +456,25 @@ const toggleFabMenu = () => {
   margin-bottom: 1rem;
 }
 
-.form-input, .form-select {
-  width: 100%;
-  padding: 0.5rem;
-  border: 1px solid #e2e8f0;
-  border-radius: 0.25rem;
-  margin-top: 0.25rem;
+.form-input,
+.form-select {
+    width: 100%;
+    padding: 0.5rem;
+    border: 1px solid #373737;
+    border-radius: 0.25rem;
+    margin-top: 0.25rem;
 }
 
 .btn-submit {
-  background-color: #4a5568;
-  color: white;
-  padding: 0.5rem;
-  border-radius: 0.25rem;
-  width: 100%;
+    background-color: var(--btn-color-4);
+    color: white;
+    padding: 0.5rem;
+    border-radius: 0.25rem;
+    /* width: 50%; */
+    margin-right: auto;
+    margin-left: auto;
+    position: relative;
+    float: right;
 }
 
 .upload-area {
@@ -545,11 +517,29 @@ const toggleFabMenu = () => {
 }
 
 @keyframes spin {
-  0% { transform: rotate(0deg); }
-  100% { transform: rotate(360deg); }
+  0% {
+    transform: rotate(0deg);
+  }
+
+  100% {
+    transform: rotate(360deg);
+  }
 }
 
 .hidden {
   display: none;
 }
+
+html[data-theme="dark"]{
+  .dialog-content{
+    color: black;
+  }
+  .fab-main {
+    background-color: var(--login-btn-bg-color);
+  }
+  .btn-submit {
+    background-color: var(--login-btn-bg-color);
+  }
+}
+
 </style>
