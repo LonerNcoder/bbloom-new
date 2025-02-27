@@ -27,8 +27,8 @@
                   <button @click="viewMore('classic')">All <SquareChevronRight/></button>
                 </a>
               </div>
-              <NovelsGrid class="novel-list">
-                <NovelCard 
+              <LazyNovelsGrid class="novel-list">
+                <LazyNovelCard 
                   v-for="novel in filteredClassics" 
                   :key="novel.id" 
                   :novel="novel" 
@@ -37,7 +37,7 @@
                   :webMode="webMode"
                   :inLibrary="novel.inLibrary"
                 />
-              </NovelsGrid>
+              </LazyNovelsGrid>
             </section>
           </div>
 
@@ -50,8 +50,8 @@
                   <button @click="viewMore('original')">All <SquareChevronRight/></button>
                 </a>
               </div>
-              <NovelsGrid class="novel-list">
-                <NovelCard 
+              <LazyNovelsGrid class="novel-list">
+                <LazyNovelCard 
                   v-for="novel in filteredOriginals" 
                   :key="novel.id" 
                   :novel="novel" 
@@ -60,7 +60,7 @@
                   :webMode="webMode"
                   :inLibrary="novel.inLibrary"  
                 />
-              </NovelsGrid>
+              </LazyNovelsGrid>
             </section>
           </div>
         </div>
@@ -115,7 +115,7 @@
                 </a>
         </div>
         <div class="novel-list vertical-list">
-          <NovelCard 
+          <LazyNovelCard 
             v-for="novel in filteredRandoms" 
             :key="novel.id" 
             :novel="novel" 
@@ -136,8 +136,6 @@
 <script setup>
 import { ref, computed, onMounted } from 'vue'
 import { useSmartFetch } from '~/composables/useSmartFetch'
-import NovelCard from '~/components/NovelCard.vue'
-import NovelsGrid from '~/components/NovelsGrid.vue'
 
 import {SquareChevronRight, Search} from 'lucide-vue-next'
 
@@ -397,7 +395,7 @@ background-color: var(--section-bg-color);
 /* Novel grid for horizontal layouts */
 .novel-list {
 display: grid;
-grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
 gap: 20px;
 }
 

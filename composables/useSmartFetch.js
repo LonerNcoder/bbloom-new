@@ -38,7 +38,7 @@ export const useSmartFetch = (request, options = {}) => {
   const {
     enableCache = true,
     cacheKey,
-    cacheTime = 300000,
+    cacheTime = 3000,
     ssr: ssrOption,
     dependencies = [],
     method = 'GET',
